@@ -1,10 +1,8 @@
-`include "common_cells/registers.svh"
-
 module cordic #(
       parameter obi_pkg::obi_cfg_t ObiCfg              = obi_pkg::ObiDefaultConfig,
       parameter type               obi_req_t           = logic,                 
       parameter type               obi_rsp_t           = logic,
-      parameter                    MaxIterationDepth   = 16
+      parameter int                MaxIterationDepth   = 16
 ) (
     input  clk_i,
     input  rst_ni,
@@ -30,9 +28,6 @@ logic system_busy;
 logic compute_done;
 logic [ObiCfg.DataWidth-1:0] cordic_result;
 
-
-
-
 //Config SFR can be configured by OBI Master i.e Ibex Core to set the precision of the CORDIC algorithm.
 config_sfr #(
     .SfrAddrWidth ( ObiCfg.AddrWidth ),
@@ -57,15 +52,15 @@ config_sfr #(
 //Control Unit to manage the iterations and control flow of the CORDIC algorithm
 control_unit #(
     .MaxIterationDepth ( MaxIterationDepth ),
-    .DataWidth ( ObiCfg.DataWidth ),
-    .IdWidth   ( ObiCfg.IdWidth )
+    .DataWidth ( ObiCfg.DataWidth )
 ) i_control_unit (
     .clk_i         ( clk_i                  ),
     .rst_ni        ( rst_ni                 ),
-    .start_i       ( obi_req_i.a.valid      ),
+    .ready_i       ( '1                     ), // TODO
+    .start_i       ( obi_req_i.req          ),
     .config_i      ( config_sfr_data        ),
-    .aid_i         ( obi_req_i.a.aid        ),        
-    .ptr_o         ( tantable_ptr           ),
+    .aid_i         ( obi_req_i.a.aid        ),
+    .ptr_o         ( tantable_ptr[$clog2(MaxIterationDepth)-1:0] ),
     .done_o        ( compute_done           ),
     .system_busy_o ( system_busy            ),
     .rid_o         ( rid                    )
@@ -83,6 +78,7 @@ cordic_engine #(
     .start_i    ( system_busy            ),
     .opmode_i   ( opmode                 ),
     .optype_i   ( optype                 ),
+    .opangle_i  ( opangle                ),
     .tan_i      ( tan_value              ),
     .ptr_i      ( tantable_ptr           ),
     .cordic_o   ( cordic_result          )
@@ -94,7 +90,7 @@ TANtable #(
     .MaxIterationDepth ( MaxIterationDepth ),
     .DataWidth ( ObiCfg.DataWidth )
 ) i_tantable (
-    .ptr_i   ( tantable_ptr ),
+    .ptr_i   ( tantable_ptr[$clog2(MaxIterationDepth)-1:0] ),
     .tan_o   ( tan_value    )
 );
 
@@ -105,9 +101,9 @@ assign obi_rsp_o.gnt = obi_req_i.req && !system_busy; // Grant when there is a v
 
 //R-Channel Signals
 assign obi_rsp_o.rvalid        = compute_done;
-assign obi_rsp_o.r.data        = cordic_result; 
+assign obi_rsp_o.r.rdata        = cordic_result; 
 assign obi_rsp_o.r.err         = 2'b00; // OKAY response
-assign obi_rsp_o.r.id          = rid;
+assign obi_rsp_o.r.rid          = rid;
 assign obi_rsp_o.r.r_optional  = 'b0; // Not used in this design;
 
 endmodule

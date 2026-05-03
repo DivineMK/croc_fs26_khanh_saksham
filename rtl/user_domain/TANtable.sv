@@ -9,7 +9,6 @@ module TANtable #(
     output logic [DataWidth-1:0] tan_o
 );
 
-
 always_comb begin
     unique case ( ptr_i )
         0:  tan_o = 32'd51472;    // atan(2^-0) in Q1.31 format

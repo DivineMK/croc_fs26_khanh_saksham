@@ -1,6 +1,7 @@
 module cordic_engine #(
     parameter DataWidth = 32,
     parameter PtrWidth = 4,
+    parameter OpAngleFieldBitWidth = 20,
     parameter OpTypeFieldBitWidth = 4,
     parameter OpModeFieldBitWidth = 2
 ) (
@@ -12,29 +13,31 @@ module cordic_engine #(
     input  logic [OpAngleFieldBitWidth-1:0]     opangle_i,
     input  logic [DataWidth-1:0]                tan_i,
     input  logic [PtrWidth-1:0]                 ptr_i,
-    output logic [DataWidth-1:0]                cordic_o
+    output logic signed [DataWidth-1:0]         cordic_o
 );
 
 
 // Internal signal declarations
-logic [DataWidth-1:0] X_pre, Y_pre, Z_pre;
+logic signed [DataWidth-1:0] X_pre, Y_pre, Z_pre;
+logic signed [DataWidth-1:0] X_q, Y_q, Z_q;
+logic signed [DataWidth-1:0] X_next, Y_next, Z_next;
 
 
 //Implementation only done for Rotation Mode sine/cosine.
 assign X_pre = (opmode_i == 2'h0) ? 'd39797 :'d0;
 assign Y_pre = (opmode_i == 2'h0) ? 'd0 :'d0;
-assign Z_pre = (opmode_i == 2'h0) ? opangle_i :'d0;
+assign Z_pre = (opmode_i == 2'h0) ? $signed({{(DataWidth-OpAngleFieldBitWidth){1'b0}}, opangle_i}) : $signed('d0);
 
 always_comb begin : X_Y_Z_nextvalue_calc
-    if(Z_q < 'd0) begin
+    if(Z_q < $signed('d0)) begin
         X_next = X_q + (Y_q >>> ptr_i);
         Y_next = Y_q - (X_q >>> ptr_i);
-        Z_next = Z_q + tan_i;
+        Z_next = Z_q + $signed({1'b0, tan_i[DataWidth-2:0]});
     end
     else begin
         X_next = X_q - (Y_q >>> ptr_i);
         Y_next = Y_q + (X_q >>> ptr_i);
-        Z_next = Z_q - tan_i;
+        Z_next = Z_q - $signed({1'b0, tan_i[DataWidth-2:0]});
     end
 end
 
@@ -56,5 +59,6 @@ always_ff @( posedge clk_i ) begin : X_Y_Z_registers
 end
 
 assign cordic_o = (optype_i == 4'h0) ? X_q : 
-                  (optype_i == 4'h1) ? Y_q : 'd0; 
+                  (optype_i == 4'h1) ? Y_q : $signed('d0); 
+
 endmodule

@@ -78,9 +78,9 @@ end
 // Value of the angle stored
 
 always_comb begin : sfr_read_logic
-    unique case(sfr_addr_i[AddrOffset +: SfrAddrWidth]) // Address decoding based on the upper bits of the address
+    sfr_rdata_d = 'b0; // Default read data value
 
-        sfr_rdata_d = 'b0; // Default read data value
+    unique case(sfr_addr_i[AddrOffset:0]) // Address decoding based on the upper bits of the address
 
         PRECISION_SFR_ADDR: begin
             if(!sfr_we_i) begin
@@ -108,7 +108,7 @@ always_comb begin : sfr_write_logic
     sfr_prec_data_d = sfr_prec_data_q;
     sfr_op_data_d = sfr_op_data_q;
 
-    unique case(sfr_addr_i[AddrOffset +: SfrAddrWidth]) // Address decoding based on the upper bits of the address
+    unique case(sfr_addr_i[AddrOffset:0]) // Address decoding based on the upper bits of the address
 
         PRECISION_SFR_ADDR: begin
             if(sfr_we_i & ~sfr_upd_i) begin
