@@ -1,4 +1,5 @@
 module control_unit #(
+    parameter obi_pkg::obi_cfg_t ObiCfg              = obi_pkg::ObiDefaultConfig,
     parameter MaxIterationDepth = 16,
     parameter DataWidth = 32,
 
@@ -27,7 +28,7 @@ typedef enum logic [1:0] {
 // Internal signal declarations
 state_t current_state, next_state;
 logic [PtrWidth-1:0] current_iteration_ptr, next_iteration_ptr;
-logic [ObiCfg.IdWidth-1:0] aid_q;
+logic [ObiCfg.IdWidth-1:0] aid_q, aid_d;
 
 // State transition logic
 always_ff @(posedge clk_i) begin
@@ -44,11 +45,11 @@ end
 
 
 always_comb begin
-    unique case(current_state)
-        aid_d = aid_q;
-        next_state = current_state; // Default to hold state
-        next_iteration_ptr = current_iteration_ptr; // Default to hold iteration pointer
+    aid_d = aid_q;
+    next_state = current_state; // Default to hold state
+    next_iteration_ptr = current_iteration_ptr; // Default to hold iteration pointer
 
+    unique case(current_state)
         SYSTEM_IDLE: begin
             next_iteration_ptr = 'd0;
             if(start_i) begin
