@@ -28,6 +28,7 @@ assign X_pre = (opmode_i == 2'h0) ? 'd39797 :'d0;
 assign Y_pre = (opmode_i == 2'h0) ? 'd0 :'d0;
 assign Z_pre = (opmode_i == 2'h0) ? $signed({{(DataWidth-OpAngleFieldBitWidth){1'b0}}, opangle_i}) : $signed('d0);
 
+
 always_comb begin : X_Y_Z_nextvalue_calc
     if(Z_q < $signed('d0)) begin
         X_next = X_q + (Y_q >>> ptr_i);
