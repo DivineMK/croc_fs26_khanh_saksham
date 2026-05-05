@@ -173,6 +173,16 @@
 ../rtl/soc_ctrl/soc_ctrl_regs.sv
 ../rtl/gpio/gpio_reg_top.sv
 ../rtl/gpio/gpio.sv
+// added
+../rtl/user_domain/ip_vga_config_pkg.sv 
+../rtl/user_domain/ip_vga_regs_pkg.sv   
+../rtl/user_domain/ip_vga_regs.sv       
+../rtl/user_domain/ip_vga_timing_fsm.sv 
+../rtl/user_domain/font_rom.sv          
+../rtl/user_domain/ip_vga_fetcher.sv    
+../rtl/user_domain/ip_vga.sv            
+../rtl/test/tb_ip_vga_pkg.sv
+// end
 ../rtl/clint/clint.sv
 ../rtl/obi_timer/obi_timer.sv
 ../rtl/croc_domain.sv

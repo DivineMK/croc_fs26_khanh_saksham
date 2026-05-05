@@ -13,6 +13,8 @@ module tb_croc_soc #(
 );
 
   import tb_croc_pkg::*;
+  import tb_ip_vga_pkg::*;
+  import ip_vga_config_pkg::*;
 
   // Signals fully controlled by the VIP
   // use VIP functions/tasks to manipulate these signals
@@ -145,11 +147,157 @@ module tb_croc_soc #(
 
     // wait for non-zero return value (written into core status register)
     $display("@%t | [CORE] Wait for end of code...", $time);
-    i_vip.jtag_wait_for_eoc(tb_data);
+    // i_vip.jtag_wait_for_eoc(tb_data);
 
     // finish simulation
     repeat(50) @(posedge sys_clk);
+  end
+
+  initial begin
+    // VGA testbench
+    #(50 * ClkPeriodSys);
+    @(posedge i_croc_soc.i_user.i_ip_vga.reg2hw.vga_en);  // wait for first vsync
+    #(3 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
+    #(5000 * ClkPeriodSys);
+    $info("TIMEOUT");
     $finish();
+  end
+
+  // VGA testbench
+  pixel_t framebuffer[FrameHeight][FrameWidth];
+
+  task write_frame_to_bmp(string file);
+    automatic int fd, fd_debug;
+    automatic int i, j;
+    automatic bit [7:0] r8, g8, b8;
+    automatic int row_pad = (4 - (FrameWidth * 3) % 4) % 4;  // pad row to 4-byte aligned
+    automatic int filesize = 54 + (FrameWidth * 3 + row_pad) * FrameHeight;
+
+    fd = $fopen(file, "wb");
+    fd_debug = $fopen("bmp_write_dump.txt", "w");
+
+    // bitmap header (14 bytes)
+    $fwrite(fd, "%c%c", "B", "M");  // signature (fixed)
+    $fwrite(fd, "%u", filesize);  // file size (#bytes)
+    $fwrite(fd, "%u", 0);  // reserved
+    $fwrite(fd, "%u", 54);  // data offset
+
+    // DIP header (BITMAPINFOHEADER)
+    $fwrite(fd, "%u", 40);  // header size
+    $fwrite(fd, "%u", FrameWidth);  // img width (#pixels)
+    $fwrite(fd, "%u", FrameHeight);  // img height (#pixels)
+    $fwrite(fd, "%u", 32'h00_18_00_01);  // #planes (must be 1), #bits per pixel (24)
+    $fwrite(fd, "%u", 0);  // compression (no)
+    $fwrite(fd, "%u", (FrameWidth * 3 + row_pad) * FrameHeight);  // image size
+    $fwrite(fd, "%u", 1000);  // X pixels/meter
+    $fwrite(fd, "%u", 1000);  // Y pixels/meter
+    $fwrite(fd, "%u", 0);  // colors used
+    $fwrite(fd, "%u", 0);  // important colors
+
+    // Pixels (format:BGR, frame bottom-up)
+    for (i = FrameHeight - 1; i >= 0; i--) begin
+      for (j = 0; j < FrameWidth; j++) begin
+        r8 = framebuffer[i][j].r << (8 - RedWidth);
+        g8 = framebuffer[i][j].g << (8 - GreenWidth);
+        b8 = framebuffer[i][j].b << (8 - BlueWidth);
+        $fwrite(fd, "%c%c%c", b8, g8, r8);
+        $fwrite(fd_debug, "(row=%0d, col=%0d): R=%0d, G=%0d, B=%0d\n", FrameHeight - 1 - i, j, r8,
+                g8, b8);
+      end
+      for (j = 0; j < row_pad; j++) $fwrite(fd, "%c", 8'h00);
+    end
+
+    $fclose(fd_debug);
+    $fclose(fd);
+  endtask
+
+
+  initial begin : frame_capture
+    automatic int clk_div_counter = 0;
+    automatic int hsync_porch = 0, vsync_porch = 0;
+    automatic bit hsync_prev = 0, vsync_prev = 0;
+    automatic int row = 0, col = 0;
+    automatic int frame_num = 0;
+    automatic bit capturing = 0;
+    automatic string file;
+
+    wait (rst_n === 0);
+    @(posedge rst_n);
+    @(negedge i_croc_soc.i_user.i_ip_vga.vsync_o);  // sync capturing on first vsync
+    forever begin
+      // before the divided clock, capture the previous values
+      if (clk_div_counter == '0) begin
+        hsync_prev = i_croc_soc.i_user.i_ip_vga.hsync_o;
+        vsync_prev = i_croc_soc.i_user.i_ip_vga.vsync_o;
+      end
+
+      @(posedge sys_clk);
+      #(0.8 * ClkPeriodSys);
+
+      // clock divider: skip rest except every N-th clock edge
+      clk_div_counter++;
+      if (clk_div_counter < ClkDiv) begin
+        continue;
+      end else begin
+        clk_div_counter = 0;
+      end
+
+      // start capturing frame after vsync pulse
+      if (vsync_prev == ControlVsyncPol && i_croc_soc.i_user.i_ip_vga.vsync_o == ~ControlVsyncPol) begin
+        vsync_porch = 0;
+        hsync_porch = 0;
+        row = 0;
+        col = 0;
+        capturing = 1;
+        $info("VSYNC PULSE: Start capturing frame");
+        continue;
+      end
+
+      // skip vertical back porch
+      if (capturing && vsync_porch < VertBackPorchSize) begin
+        if (hsync_prev == ControlHsyncPol && i_croc_soc.i_user.i_ip_vga.hsync_o == ~ControlHsyncPol) begin
+          vsync_porch++;
+        end
+        continue;
+      end
+
+
+      // capture lines with visible area
+      if (capturing && row < FrameHeight) begin
+        // start capturing current line after hsync pulse
+        if (hsync_prev == ControlHsyncPol && i_croc_soc.i_user.i_ip_vga.hsync_o == ~ControlHsyncPol) begin
+          hsync_porch = 0;
+          col = 0;
+          row++;
+          $info("Capturing line no #%0d", row);
+          continue;
+        end
+
+        // skip horizontal back porch
+        if (hsync_porch < (HoriBackPorchSize - 1)) begin
+          hsync_porch++;
+          continue;
+        end
+
+        // capture pixel in visible area of this line
+        if (col < FrameWidth) begin
+          framebuffer[row][col].r = i_croc_soc.i_user.i_ip_vga.red_o;
+          framebuffer[row][col].g = i_croc_soc.i_user.i_ip_vga.green_o;
+          framebuffer[row][col].b = i_croc_soc.i_user.i_ip_vga.blue_o;
+          // if ({i_croc_soc.i_user.i_ip_vga.red_o, i_croc_soc.i_user.i_ip_vga.green_o, i_croc_soc.i_user.i_ip_vga.blue_o} == 16'b0) begin
+          //   $info("Error at time %0t in row %0d col %0d", $time, row, col);
+          // end
+          col++;
+        end
+      end
+
+      if (capturing && row == FrameHeight) begin
+        file = $sformatf("frame_%0d.bmp", frame_num++);
+        write_frame_to_bmp(file);
+        $info("Frame #%0d captured to %s", frame_num - 1, file);
+        capturing = 0;
+      end
+    end
   end
 
   ////////////////

@@ -26,15 +26,6 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
 
   assign interrupts_o = '0;
 
-
-  //////////////////////
-  // User Manager MUX //
-  /////////////////////
-
-  // No manager so we don't need a obi_mux module and just terminate the request properly
-  assign user_mgr_obi_req_o = '0;
-
-
   ////////////////////////////
   // User Subordinate DEMUX //
   ////////////////////////////
@@ -52,15 +43,14 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   sbr_obi_rsp_t user_error_obi_rsp;
 
   // OBI bus to your design
-  sbr_obi_req_t user_design_obi_req;
-  sbr_obi_rsp_t user_design_obi_rsp;
+  sbr_obi_req_t user_ip_vga_regs_obi_req;
+  sbr_obi_rsp_t user_ip_vga_regs_obi_rsp;
 
   // Fanout into more readable signals
   assign user_error_obi_req               = all_user_sbr_obi_req[UserError];
   assign all_user_sbr_obi_rsp[UserError]  = user_error_obi_rsp;
-  assign user_design_obi_req              = all_user_sbr_obi_req[UserDesign];
-  assign all_user_sbr_obi_rsp[UserDesign] = user_design_obi_rsp;
-
+  assign user_ip_vga_regs_obi_req         = all_user_sbr_obi_req[UserDesign];
+  assign all_user_sbr_obi_rsp[UserDesign] = user_ip_vga_regs_obi_rsp;
 
   //-----------------------------------------------------------------------------------------------
   // Demultiplex to User Subordinates according to address map
@@ -110,20 +100,7 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   ///////////////////////////////////
   // Replace this with your Design //
   ///////////////////////////////////
-  obi_err_sbr #(
-    .ObiCfg      ( SbrObiCfg     ),
-    .obi_req_t   ( sbr_obi_req_t ),
-    .obi_rsp_t   ( sbr_obi_rsp_t ),
-    .NumMaxTrans ( 1             ),
-    .RspData     ( 32'hBADCAB1E  )
-  ) i_your_design_goes_here (
-    .clk_i,
-    .rst_ni,
-    .testmode_i ( testmode_i          ),
-    .obi_req_i  ( user_design_obi_req ),
-    .obi_rsp_o  ( user_design_obi_rsp )
-  );
-
+  //
   // Error Subordinate
   obi_err_sbr #(
     .ObiCfg      ( SbrObiCfg     ),
@@ -138,5 +115,39 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
     .obi_req_i  ( user_error_obi_req ),
     .obi_rsp_o  ( user_error_obi_rsp )
   );
+
+  //////////////////////
+  // User Manager MUX //
+  /////////////////////
+
+  // No manager so we don't need a obi_mux module and just terminate the request properly
+  ip_vga #(
+    // .ObiCfg     (obi_pkg::ObiDefaultConfig),
+    // .RedWidth   (RedWidth),
+    // .GreenWidth (GreenWidth),
+    // .BlueWidth  (BlueWidth),
+    // .HCountWidth(HCountWidth),
+    // .VCountWidth(VCountWidth),
+    .obi_req_t  (sbr_obi_req_t),
+    .obi_rsp_t  (sbr_obi_rsp_t),
+    .reg_req_t  (sbr_obi_req_t),
+    .reg_rsp_t  (sbr_obi_rsp_t)
+   ) i_ip_vga (
+    .clk_i         (clk_i),
+    .rst_ni        (rst_ni),
+    .test_mode_en_i('0), // unused
+    .reg_req_i     (user_ip_vga_regs_obi_req),
+    .reg_rsp_o     (user_ip_vga_regs_obi_rsp),
+    .obi_req_o     (user_mgr_obi_req_o),
+    .obi_rsp_i     (user_mgr_obi_rsp_i),
+    .frame_done_o  (),
+    .vsync_start_o (),
+    .hsync_o       (),
+    .vsync_o       (),
+    .red_o         (),
+    .green_o       (),
+    .blue_o        ()
+  );
+
 
 endmodule
