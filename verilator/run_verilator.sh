@@ -70,16 +70,14 @@ build_verilator() {
         --timing \
         --autoflush \
         --trace-fst \
-        --trace-threads 2 \
         --trace-structs \
+        --trace-max-array 65536 \
+        --trace-max-width 65536 \
         --unroll-count 1 \
         --unroll-stmts 1 \
         --x-assign fast \
         --x-initial fast \
         -O3 \
-        --top tb_croc_soc \
-        -f croc.f 2>&1 | \
-        tee ${PROJ_NAME}_build.log"
         --top tb_${DUT_DESIGN} \
         -f ${PROJ_NAME}.f 2>&1 | \
         tee ${DUT_DESIGN}_build.log"
