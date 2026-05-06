@@ -9,6 +9,8 @@
 ../rtl/user_domain/config_sfr.sv
 ../rtl/user_domain/control_unit.sv
 ../rtl/user_domain/cordic_engine.sv
+../rtl/user_domain/drcg.sv
 ../rtl/user_domain/cordic.sv
+../rtl/tech_cells_generic/tc_clk.sv
 ../rtl/test/tb_cordic.sv
 
