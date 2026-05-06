@@ -3,11 +3,13 @@ module cordic #(
       parameter type               obi_req_t           = logic,                 
       parameter type               obi_rsp_t           = logic,
       parameter int                MaxIterationDepth   = 16,
-      parameter                    UserDesignBaseAddress = 32'h2000_1000
+      parameter                    UserDesignBaseAddress = 32'h2000_1000,
+      parameter                    drcg_enable = 1'b1
 ) (
     input  clk_i,
     input  rst_ni,
     input  obi_req_t obi_req_i,
+    input  logic drcg_en_i,
     output obi_rsp_t obi_rsp_o
 );
 
@@ -33,7 +35,7 @@ logic compute_start;
 logic opsfr_access_valid;
 logic sfr_access_valid;
 logic err;
-
+logic drcg_clk;
 
 //Config SFR can be configured by OBI Master i.e Ibex Core to set the precision of the CORDIC algorithm.
 config_sfr #(
@@ -45,7 +47,7 @@ config_sfr #(
     .MaxIterationDepth ( MaxIterationDepth ),
     .CordicBaseAddress ( UserDesignBaseAddress )
 ) i_config_sfr (
-    .clk_i                ( clk_i                  ),
+    .clk_i                ( drcg_clk               ),
     .rst_ni               ( rst_ni                 ),
     .sfr_addr_i           ( obi_req_i.a.addr       ),
     .sfr_data_i           ( obi_req_i.a.wdata      ),
@@ -66,7 +68,7 @@ control_unit #(
     .MaxIterationDepth ( MaxIterationDepth ),
     .DataWidth ( ObiCfg.DataWidth )
 ) i_control_unit (
-    .clk_i                ( clk_i                  ),
+    .clk_i                ( drcg_clk               ),
     .rst_ni               ( rst_ni                 ),
     .ready_i              ( '1                     ), // TODO
     .start_i              ( obi_req_i.req          ),
@@ -88,7 +90,7 @@ cordic_engine #(
     .OpTypeFieldBitWidth (OpTypeFieldBitWidth),
     .OpModeFieldBitWidth (OpModeFieldBitWidth)
 ) i_cordic_engine (
-    .clk_i      ( clk_i                  ),
+    .clk_i      ( drcg_clk              ),
     .rst_ni     ( rst_ni                 ),
     .start_i    ( system_busy            ),
     .opmode_i   ( opmode                 ),
@@ -108,6 +110,30 @@ TANtable #(
     .ptr_i   ( tantable_ptr ),
     .tan_o   ( tan_value    )
 );
+
+
+
+
+generate
+    if(drcg_enable) begin
+        drcg i_drcg (
+            .clk_i      ( clk_i          ),
+            .rst_ni     ( rst_ni         ),
+            .req_i      ( obi_req_i.req  ),
+            .rvalid_i   ( compute_done   ),
+            .drcg_en_i  ( drcg_en_i    ),
+            .drcg_clk_o ( drcg_clk       )
+        );
+    end else begin
+        assign drcg_clk = clk_i;
+    end
+endgenerate
+
+
+
+
+
+
 
 
 
