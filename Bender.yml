@@ -34,6 +34,8 @@ sources:
   - rtl/clint/clint_reg_pkg.sv
   - rtl/obi_timer/obi_timer_reg_pkg.sv
   # add your design files containing anything but modules (packages) here
+  - rtl/user_domain/ip_vga_config_pkg.sv
+  - rtl/user_domain/ip_vga_regs_pkg.sv
 
     # RTL
   - target: not(netlist_yosys)
@@ -48,8 +50,13 @@ sources:
       - rtl/obi_timer/obi_timer.sv
       # Level 2
       - rtl/croc_domain.sv
-      - rtl/user_domain.sv
       # add your design files with modules here
+      - rtl/user_domain/ip_vga_timing_fsm.sv
+      - rtl/user_domain/ip_vga_fetcher.sv
+      - rtl/user_domain/ip_vga_regs.sv
+      - rtl/user_domain/font_rom.sv
+      - rtl/user_domain/ip_vga.sv
+      - rtl/user_domain.sv
       # Level 3
       - rtl/croc_soc.sv
 

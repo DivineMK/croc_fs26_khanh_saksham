@@ -41,6 +41,12 @@ set_false_path -hold -to [get_ports fan_pwm]
 set_output_delay -min -clock $soc_clk [expr { $SOC_TCK * 0.10 }] [get_ports gpio_o]
 set_output_delay -max -clock $soc_clk [expr { $SOC_TCK * 0.35 }] [get_ports gpio_o]
 
+#######
+# VGA #
+#######
+
+set_output_delay -min -clock $soc_clk [expr { $SOC_TCK * 0.10 }] [get_ports vga*]
+set_output_delay -max -clock $soc_clk [expr { $SOC_TCK * 0.35 }] [get_ports vga*]
 
 ###############
 # Assign Pins #
@@ -90,4 +96,26 @@ set_property -dict { PACKAGE_PIN W28   IOSTANDARD LVCMOS33 } [get_ports { jtag_t
 set_property -dict { PACKAGE_PIN W29   IOSTANDARD LVCMOS33 } [get_ports { jtag_tms_i }]; #IO_L4P_T0_13 Sch=prog_d3/ss
 set_property -dict { PACKAGE_PIN Y29   IOSTANDARD LVCMOS33 } [get_ports { jtag_trst_ni }]; #IO_L4N_T0_13 Sch=prog_d[4]
 
+# VGA Connector
+set_property -dict { PACKAGE_PIN AH20  IOSTANDARD LVCMOS33 } [get_ports { vga_blue_o[0] }]; #IO_L22N_T3_12 Sch=vga_b[3]
+set_property -dict { PACKAGE_PIN AG20  IOSTANDARD LVCMOS33 } [get_ports { vga_blue_o[1] }]; #IO_L22P_T3_12 Sch=vga_b[4]
+set_property -dict { PACKAGE_PIN AF21  IOSTANDARD LVCMOS33 } [get_ports { vga_blue_o[2] }]; #IO_L19N_T3_VREF_12 Sch=vga_b[5]
+set_property -dict { PACKAGE_PIN AK20  IOSTANDARD LVCMOS33 } [get_ports { vga_blue_o[3] }]; #IO_L24P_T3_12 Sch=vga_b[6]
+set_property -dict { PACKAGE_PIN AG22  IOSTANDARD LVCMOS33 } [get_ports { vga_blue_o[4] }]; #IO_L20P_T3_12 Sch=vga_b[7]
+
+set_property -dict { PACKAGE_PIN AJ23  IOSTANDARD LVCMOS33 } [get_ports { vga_green_o[0] }]; #IO_L21N_T3_DQS_12 Sch=vga_g[2]
+set_property -dict { PACKAGE_PIN AJ22  IOSTANDARD LVCMOS33 } [get_ports { vga_green_o[1] }]; #IO_L21P_T3_DQS_12 Sch=vga_g[3]
+set_property -dict { PACKAGE_PIN AH22  IOSTANDARD LVCMOS33 } [get_ports { vga_green_o[2] }]; #IO_L20N_T3_12 Sch=vga_g[4]
+set_property -dict { PACKAGE_PIN AK21  IOSTANDARD LVCMOS33 } [get_ports { vga_green_o[3] }]; #IO_L24N_T3_12 Sch=vga_g[5]
+set_property -dict { PACKAGE_PIN AJ21  IOSTANDARD LVCMOS33 } [get_ports { vga_green_o[4] }]; #IO_L23N_T3_12 Sch=vga_g[6]
+set_property -dict { PACKAGE_PIN AK23  IOSTANDARD LVCMOS33 } [get_ports { vga_green_o[5] }]; #IO_L17P_T2_12 Sch=vga_g[7]
+
+set_property -dict { PACKAGE_PIN AK25  IOSTANDARD LVCMOS33 } [get_ports { vga_red_o[0] }]; #IO_L15N_T2_DQS_12 Sch=vga_r[3]
+set_property -dict { PACKAGE_PIN AG25  IOSTANDARD LVCMOS33 } [get_ports { vga_red_o[1] }]; #IO_L18P_T2_12 Sch=vga_r[4]
+set_property -dict { PACKAGE_PIN AH25  IOSTANDARD LVCMOS33 } [get_ports { vga_red_o[2] }]; #IO_L18N_T2_12 Sch=vga_r[5]
+set_property -dict { PACKAGE_PIN AK24  IOSTANDARD LVCMOS33 } [get_ports { vga_red_o[3] }]; #IO_L17N_T2_12 Sch=vga_r[6]
+set_property -dict { PACKAGE_PIN AJ24  IOSTANDARD LVCMOS33 } [get_ports { vga_red_o[4] }]; #IO_L15P_T2_DQS_12 Sch=vga_r[7]
+
+set_property -dict { PACKAGE_PIN AF20  IOSTANDARD LVCMOS33 } [get_ports { vga_hsync_o }]; #IO_L19P_T3_12 Sch=vga_hs
+set_property -dict { PACKAGE_PIN AG23  IOSTANDARD LVCMOS33 } [get_ports { vga_vsync_o }]; #IO_L13N_T2_MRCC_12 Sch=vga_vs
 # tclint-enable line-length, spacing

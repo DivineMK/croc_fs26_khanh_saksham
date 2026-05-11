@@ -17,6 +17,7 @@
   `define USE_LEDS
   `define USE_FAN
   `define USE_VIO
+  `define USE_VGA
 `endif
 
 `define ILA(__name, __signal)  \
@@ -58,6 +59,15 @@ module croc_xilinx import croc_pkg::*; #(
 `ifdef USE_JTAG_VDDGND
   output logic  jtag_vdd_o,
   output logic  jtag_gnd_o,
+`endif
+
+`ifdef USE_VGA
+  // VGA Colour signals
+  output logic        vga_hsync_o,
+  output logic        vga_vsync_o,
+  output logic [RedWidth-1:0]   vga_red_o,
+  output logic [GreenWidth-1:0] vga_green_o,
+  output logic [BlueWidth-1:0]  vga_blue_o,
 `endif
 
 `ifdef USE_FAN
@@ -113,10 +123,6 @@ module croc_xilinx import croc_pkg::*; #(
 
 `ifndef USE_STATUS
   logic status_o;
-`endif
-
-`ifndef USE_LEDS
-  logic [GpioCount-1:0] gpio_o;
 `endif
 
   ////////////
@@ -255,9 +261,18 @@ module croc_xilinx import croc_pkg::*; #(
     .uart_rx_i       ( uart_rx_i ),
     .uart_tx_o       ( uart_tx_o ),
 
+`ifdef USE_VGA
+    .hsync_o(vga_hsync_o),
+    .vsync_o(vga_vsync_o),
+    .red_o(vga_red_o),
+    .green_o(vga_green_o),
+    .blue_o(vga_blue_o),
+`endif
+
     .gpio_i          ( soc_gpio_i        ),
     .gpio_o          ( soc_gpio_o        ),
     .gpio_out_en_o   ( soc_gpio_out_en_o )
+
   );
 
 endmodule
