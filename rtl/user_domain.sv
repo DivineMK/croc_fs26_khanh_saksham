@@ -128,8 +128,8 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
     // .BlueWidth  (BlueWidth),
     // .HCountWidth(HCountWidth),
     // .VCountWidth(VCountWidth),
-    .obi_req_t  (sbr_obi_req_t),
-    .obi_rsp_t  (sbr_obi_rsp_t),
+    .obi_req_t  (mgr_obi_req_t),
+    .obi_rsp_t  (mgr_obi_rsp_t),
     .reg_req_t  (sbr_obi_req_t),
     .reg_rsp_t  (sbr_obi_rsp_t)
    ) i_ip_vga (

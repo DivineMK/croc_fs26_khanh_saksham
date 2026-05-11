@@ -7,8 +7,8 @@ package ip_vga_config_pkg;
   localparam int unsigned FontHeightLog = $clog2(FontHeight);
   localparam int unsigned FontDataWidth = 64;  // font word size
 
-  localparam int unsigned LineCharWidth = 20;
-  localparam int unsigned LineCharHeight = 5;
+  localparam int unsigned LineCharWidth = 80;
+  localparam int unsigned LineCharHeight = 25;
 
   // OBI parameters -> use ObiCfg
   // localparam int unsigned ObiDataWidth = 32;  // obi width
