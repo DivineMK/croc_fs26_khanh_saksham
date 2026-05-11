@@ -65,8 +65,8 @@ module ip_vga import ip_vga_regs_pkg::*; #(
 
   // Registers
   ip_vga_regs #(
-      .obi_req_t(obi_req_t),
-      .obi_rsp_t(obi_rsp_t)
+      .obi_req_t(reg_req_t),
+      .obi_rsp_t(reg_rsp_t)
   ) i_ip_vga_regs (
       .clk_i    (clk_i),
       .rst_ni   (rst_ni),
