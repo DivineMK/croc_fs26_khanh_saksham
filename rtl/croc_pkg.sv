@@ -26,6 +26,12 @@ package croc_pkg;
     part_num:     16'hC0C5, /* default Croc part number */
     version:       4'h1     /* 2nd version (2026) */
   };
+  ////////////////////////
+  // VGA Configuration  //
+  ////////////////////////
+  localparam int unsigned RedWidth    = 5;
+  localparam int unsigned GreenWidth  = 6;
+  localparam int unsigned BlueWidth   = 5;
 
   ////////////////////////
   // iDMA Configuration //

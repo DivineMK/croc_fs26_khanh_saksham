@@ -223,12 +223,12 @@ module tb_croc_soc #(
 
     wait (rst_n === 0);
     @(posedge rst_n);
-    @(negedge i_croc_soc.i_user.i_ip_vga.vsync_o);  // sync capturing on first vsync
+    @(negedge i_croc_soc.vsync_o);  // sync capturing on first vsync
     forever begin
       // before the divided clock, capture the previous values
       if (clk_div_counter == '0) begin
-        hsync_prev = i_croc_soc.i_user.i_ip_vga.hsync_o;
-        vsync_prev = i_croc_soc.i_user.i_ip_vga.vsync_o;
+        hsync_prev = i_croc_soc.hsync_o;
+        vsync_prev = i_croc_soc.vsync_o;
       end
 
       @(posedge sys_clk);
@@ -243,7 +243,7 @@ module tb_croc_soc #(
       end
 
       // start capturing frame after vsync pulse
-      if (vsync_prev == ControlVsyncPol && i_croc_soc.i_user.i_ip_vga.vsync_o == ~ControlVsyncPol) begin
+      if (vsync_prev == ControlVsyncPol && i_croc_soc.vsync_o == ~ControlVsyncPol) begin
         vsync_porch = 0;
         hsync_porch = 0;
         row = 0;
@@ -255,7 +255,7 @@ module tb_croc_soc #(
 
       // skip vertical back porch
       if (capturing && vsync_porch < VertBackPorchSize) begin
-        if (hsync_prev == ControlHsyncPol && i_croc_soc.i_user.i_ip_vga.hsync_o == ~ControlHsyncPol) begin
+        if (hsync_prev == ControlHsyncPol && i_croc_soc.hsync_o == ~ControlHsyncPol) begin
           vsync_porch++;
         end
         continue;
@@ -265,7 +265,7 @@ module tb_croc_soc #(
       // capture lines with visible area
       if (capturing && row < FrameHeight) begin
         // start capturing current line after hsync pulse
-        if (hsync_prev == ControlHsyncPol && i_croc_soc.i_user.i_ip_vga.hsync_o == ~ControlHsyncPol) begin
+        if (hsync_prev == ControlHsyncPol && i_croc_soc.hsync_o == ~ControlHsyncPol) begin
           hsync_porch = 0;
           col = 0;
           row++;
@@ -281,10 +281,10 @@ module tb_croc_soc #(
 
         // capture pixel in visible area of this line
         if (col < FrameWidth) begin
-          framebuffer[row][col].r = i_croc_soc.i_user.i_ip_vga.red_o;
-          framebuffer[row][col].g = i_croc_soc.i_user.i_ip_vga.green_o;
-          framebuffer[row][col].b = i_croc_soc.i_user.i_ip_vga.blue_o;
-          // if ({i_croc_soc.i_user.i_ip_vga.red_o, i_croc_soc.i_user.i_ip_vga.green_o, i_croc_soc.i_user.i_ip_vga.blue_o} == 16'b0) begin
+          framebuffer[row][col].r = i_croc_soc.red_o;
+          framebuffer[row][col].g = i_croc_soc.green_o;
+          framebuffer[row][col].b = i_croc_soc.blue_o;
+          // if ({i_croc_soc.red_o, i_croc_soc.green_o, i_croc_soc.blue_o} == 16'b0) begin
           //   $info("Error at time %0t in row %0d col %0d", $time, row, col);
           // end
           col++;

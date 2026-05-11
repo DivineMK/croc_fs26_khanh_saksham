@@ -43,8 +43,6 @@ module ip_vga import ip_vga_regs_pkg::*; #(
     output logic [GreenWidth-1:0] green_o,
     output logic [ BlueWidth-1:0] blue_o
 );
-  import ip_vga_config_pkg::*;
-
   logic timing_ready;
   ip_vga_reg2hw_t reg2hw;
 

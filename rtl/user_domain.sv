@@ -20,8 +20,15 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   output mgr_obi_req_t user_mgr_obi_req_o, // User Mgr (req_o), Croc Sbr (rsp_i)
   input  mgr_obi_rsp_t user_mgr_obi_rsp_i,
 
+  output logic                  hsync_o,
+  output logic                  vsync_o,
+  output logic [  RedWidth-1:0] red_o,
+  output logic [GreenWidth-1:0] green_o,
+  output logic [ BlueWidth-1:0] blue_o,
+
   input  logic [      GpioCount-1:0] gpio_in_sync_i, // synchronized GPIO inputs
   output logic [NumExternalIrqs-1:0] interrupts_o    // interrupts to core
+
 );
 
   assign interrupts_o = '0;
@@ -142,11 +149,11 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
     .obi_rsp_i     (user_mgr_obi_rsp_i),
     .frame_done_o  (),
     .vsync_start_o (),
-    .hsync_o       (),
-    .vsync_o       (),
-    .red_o         (),
-    .green_o       (),
-    .blue_o        ()
+    .hsync_o,
+    .vsync_o,
+    .red_o,
+    .green_o,
+    .blue_o
   );
 
 
