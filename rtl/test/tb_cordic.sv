@@ -24,8 +24,7 @@ module tb_cordic #();
       .clk_i,
       .rst_ni,
       .obi_req_i(req),
-      .obi_rsp_o(rsp),
-      .drcg_en_i(1'b1) // Enable clock gating for testing
+      .obi_rsp_o(rsp)
   );
 
   initial begin
