@@ -9,7 +9,6 @@ module cordic #(
     input  clk_i,
     input  rst_ni,
     input  obi_req_t obi_req_i,
-    input  logic drcg_en_i,
     output obi_rsp_t obi_rsp_o
 );
 
@@ -28,6 +27,7 @@ logic [OpAngleFieldBitWidth-1:0] opangle;
 logic [OpModeFieldBitWidth-1:0] opmode;
 logic [OpTypeFieldBitWidth-1:0] optype;
 logic [PtrWidth-1:0] precision;
+logic drcg_en;
 logic system_busy;
 logic compute_done;
 logic [ObiCfg.DataWidth-1:0] cordic_result;
@@ -57,6 +57,7 @@ config_sfr #(
     .optype_o             ( optype                 ),
     .opangle_o            ( opangle                ),
     .precision_o          ( precision              ),
+    .drcg_en_o            ( drcg_en                ),
     .sfr_data_o           ( config_sfr_data        ),
     .opsfr_access_valid_o ( opsfr_access_valid     ),
     .sfraccess_valid_o    ( sfr_access_valid       )
@@ -121,7 +122,7 @@ generate
             .rst_ni     ( rst_ni         ),
             .req_i      ( obi_req_i.req  ),
             .rvalid_i   ( compute_done   ),
-            .drcg_en_i  ( drcg_en_i    ),
+            .drcg_en_i  ( drcg_en        ),
             .drcg_clk_o ( drcg_clk       )
         );
     end else begin
