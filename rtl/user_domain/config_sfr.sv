@@ -33,18 +33,20 @@ logic [SfrDataWidth-1:0] sfr_op_data_q, sfr_op_data_d;
 logic sfraccess_valid;
 
 
-//Internal Signal Definitions
-assign sfraccess_valid = (sfr_addr_i == PRECISION_SFR_ADDR) || (sfr_addr_i == OPERATION_SFR_ADDR);
 
 //Local parameters and type declarations
 localparam AddrOffset = $clog2(SfrDataWidth/8);
 
 
 //SFR Addresses
-localparam PrecisionSfrAddrOffset = 32'h0;
-localparam ConfigSfrAddrOffset = 32'h4;
+localparam ConfigSfrAddrOffset = 32'h0;
+localparam OperationSfrAddrOffset = 32'h4;
 localparam CONFIG_SFR_ADDR = 32'h2000_1000 + ConfigSfrAddrOffset; // SFR for configuration
 localparam OPERATION_SFR_ADDR = 32'h2000_1000 + OperationSfrAddrOffset; // SFR for deciding which trigonometric function to compute
+
+
+//Internal Signal Definitions
+assign sfraccess_valid = (sfr_addr_i == CONFIG_SFR_ADDR) || (sfr_addr_i == OPERATION_SFR_ADDR);
 
 
 
