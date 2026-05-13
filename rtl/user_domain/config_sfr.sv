@@ -20,6 +20,7 @@ module config_sfr #(
     output logic [OpModeFieldBitWidth-1:0]        opmode_o,
     output logic [OpAngleFieldBitWidth-1:0]       opangle_o,
     output logic [MaxIterationDepthBitWidth-1:0]  precision_o,
+    output logic                                  drcg_en_o,
     output logic [SfrDataWidth-1:0]               sfr_data_o,
     output logic                                  opsfr_access_valid_o,
     output logic                                  sfraccess_valid_o
@@ -27,7 +28,7 @@ module config_sfr #(
 
 //Internal signal declarations
 logic [SfrDataWidth-1:0] sfr_rdata_q, sfr_rdata_d;
-logic [SfrDataWidth-1:0] sfr_prec_data_q, sfr_prec_data_d;
+logic [SfrDataWidth-1:0] sfr_cfg_data_q, sfr_cfg_data_d;
 logic [SfrDataWidth-1:0] sfr_op_data_q, sfr_op_data_d;
 logic sfraccess_valid;
 
@@ -41,8 +42,8 @@ localparam AddrOffset = $clog2(SfrDataWidth/8);
 
 //SFR Addresses
 localparam PrecisionSfrAddrOffset = 32'h0;
-localparam OperationSfrAddrOffset = 32'h4;
-localparam PRECISION_SFR_ADDR = 32'h2000_1000 + PrecisionSfrAddrOffset; // SFR for precision configuration
+localparam ConfigSfrAddrOffset = 32'h4;
+localparam CONFIG_SFR_ADDR = 32'h2000_1000 + ConfigSfrAddrOffset; // SFR for configuration
 localparam OPERATION_SFR_ADDR = 32'h2000_1000 + OperationSfrAddrOffset; // SFR for deciding which trigonometric function to compute
 
 
@@ -50,11 +51,11 @@ localparam OPERATION_SFR_ADDR = 32'h2000_1000 + OperationSfrAddrOffset; // SFR f
 always_ff @(posedge clk_i) begin
     if(!rst_ni) begin
         sfr_rdata_q <= 'b0;
-        sfr_prec_data_q <= 'hf;
+        sfr_cfg_data_q <= 'hf;
         sfr_op_data_q <= 'b0;
     end else begin
         sfr_rdata_q <= sfr_rdata_d;
-        sfr_prec_data_q <= sfr_prec_data_d;
+        sfr_cfg_data_q <= sfr_cfg_data_d;
         sfr_op_data_q <= sfr_op_data_d;
     end
 end
@@ -64,12 +65,14 @@ end
 
 //SFR Address Map
 
-//-------------- PRECISION_SFR_ADDR: --------------------
+//-------------- CONFIG_SFR_ADDR: --------------------
 // Maximum possible precision is determined by the parameter MaxIterationDepth of the CORDIC algorithm. 
 // We allocate MaxIterationDepthBitWidth bits in the LSB within the SfrDataWidth bits in the SFR
 // [MaxIterationDepthBitWidth-1:0] Prec Field
-//Prec Field: 
+// [3:0] Prec Field: 
 // 0x0: 1 iteration, 0x1: 2 iterations, 0x2: 3 iterations ... 0xf: 16 iterations (Default)
+// [31] DRCG Enable Bit: 
+// 1'b0: DRCG Disabled(Default), 1'b1: DRCG Enabled 
 
 
 
@@ -91,9 +94,9 @@ always_comb begin : sfr_read_logic
 
     unique case(sfr_addr_i[AddrOffset:0]) // Address decoding based on the upper bits of the address
 
-        PrecisionSfrAddrOffset: begin
+        ConfigSfrAddrOffset: begin
             if(!sfr_we_i & sfraccess_valid) begin
-                sfr_rdata_d = sfr_prec_data_q;
+                sfr_rdata_d = sfr_cfg_data_q;
             end
         end
 
@@ -114,14 +117,14 @@ end
 always_comb begin : sfr_write_logic
 
     // Default to hold the current values
-    sfr_prec_data_d = sfr_prec_data_q;
+    sfr_cfg_data_d = sfr_cfg_data_q;
     sfr_op_data_d = sfr_op_data_q;
 
     unique case(sfr_addr_i[AddrOffset:0]) // Address decoding based on the upper bits of the address
 
-        PrecisionSfrAddrOffset: begin
+        ConfigSfrAddrOffset: begin
             if(sfr_we_i & ~sfr_upd_i & sfraccess_valid) begin
-                sfr_prec_data_d = {{ (SfrDataWidth - MaxIterationDepthBitWidth){1'b0} }, sfr_data_i[MaxIterationDepthBitWidth-1:0]}; 
+                sfr_cfg_data_d = {sfr_data_i[SfrDataWidth - 1], { (SfrDataWidth - MaxIterationDepthBitWidth - 1){1'b0} }, sfr_data_i[MaxIterationDepthBitWidth-1:0]}; 
             end
         end
 
@@ -132,7 +135,7 @@ always_comb begin : sfr_write_logic
         end
 
         default: begin
-            sfr_prec_data_d = sfr_prec_data_q;
+            sfr_cfg_data_d = sfr_cfg_data_q;
             sfr_op_data_d = sfr_op_data_q;
         end
     endcase
@@ -140,12 +143,13 @@ always_comb begin : sfr_write_logic
 end
 
 //Output Assignments
-assign sfr_data_o  = sfr_rdata_q;
-assign opmode_o    = sfr_op_data_q[OpTypeFieldBitWidth + OpModeFieldBitWidth - 1:OpTypeFieldBitWidth];
-assign optype_o    = sfr_op_data_q[OpTypeFieldBitWidth-1:0];
-assign opangle_o   = sfr_op_data_q[SfrDataWidth-1:SfrDataWidth - OpAngleFieldBitWidth];
-assign precision_o = sfr_prec_data_q[MaxIterationDepthBitWidth-1:0];
+assign sfr_data_o           = sfr_rdata_q;
+assign opmode_o             = sfr_op_data_q[OpTypeFieldBitWidth + OpModeFieldBitWidth - 1:OpTypeFieldBitWidth];
+assign optype_o             = sfr_op_data_q[OpTypeFieldBitWidth-1:0];
+assign opangle_o            = sfr_op_data_q[SfrDataWidth-1:SfrDataWidth - OpAngleFieldBitWidth];
+assign precision_o          = sfr_cfg_data_q[MaxIterationDepthBitWidth-1:0];
+assign drcg_en_o            = sfr_cfg_data_q[SfrDataWidth - 1];
 assign opsfr_access_valid_o = (sfr_addr_i == OPERATION_SFR_ADDR);
-assign sfraccess_valid_o = sfraccess_valid;
+assign sfraccess_valid_o    = sfraccess_valid;
 
 endmodule
