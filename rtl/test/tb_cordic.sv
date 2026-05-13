@@ -47,17 +47,32 @@ module tb_cordic #();
     
     // Wait for the grant indicating request accepted
     wait(rsp.gnt);
+
     @(posedge clk_i);
     #1;
     req.req = 1'b0;
-    // 2. Write to Operation SFR (Addr: 0x4)
+    // 2. Write to Misc SFR (Addr: 0x4): Enable DRCG
+    @(posedge clk_i);
+    #1;
+    req.req = 1'b1;
+    req.a.we = 1'b1;
+    req.a.addr = 32'h2000_1000 + 32'h4;
+    req.a.wdata = 32'h1; 
+    
+    wait(rsp.gnt);
+
+
+    @(posedge clk_i);
+    #1;
+    req.req = 1'b0;
+    // 3. Write to Operation SFR (Addr: 0x8)
     // Starts the computation. Let's say we want OpMode=0 (Rotation), OpType=0 (Sine), Angle = 30 degrees (mapped)
     // Angle sits in the upper bits [31:16]
     @(posedge clk_i);
     #1;
     req.req = 1'b1;
     req.a.we = 1'b1;
-    req.a.addr = 32'h2000_1000 + 32'h4;
+    req.a.addr = 32'h2000_1000 + 32'h8;
     // req.a.wdata = {20'h10C15, 12'h0000}; // pi/3
     req.a.wdata = {20'h0C910, 12'h0000}; // pi/4
     
