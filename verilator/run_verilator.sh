@@ -9,6 +9,7 @@
 set -e  # Exit on error
 set -u  # Error on undefined vars
 
+set -o pipefail
 
 ################
 # Setup
@@ -79,6 +80,9 @@ build_verilator() {
         --top tb_croc_soc \
         -f croc.f 2>&1 | \
         tee ${PROJ_NAME}_build.log"
+        --top tb_${DUT_DESIGN} \
+        -f ${PROJ_NAME}.f 2>&1 | \
+        tee ${DUT_DESIGN}_build.log"
 }
 
 
