@@ -208,7 +208,19 @@ module ip_vga_fetcher #(
   assign {red_o, green_o, blue_o} = (bitmap_buffer_q[char_horz[0]][pixel_horz_q[2:0]] == 1) ? 16'hFFFF : 16'h0;
 
   always_ff @(posedge clk_i, negedge rst_ni) begin
-    if (~rst_ni || ~fsm_en) begin
+    if (~rst_ni) begin
+      pixel_horz_q <= vga_h_visible_size - 1;
+      pixel_vert_q <= vga_v_visible_size - 1;
+
+      font_req_idx_q <= vga_line_width - 1;
+      font_sel_q <= FontHeight - 1;
+      bitmap_buffer_q <= '0;
+
+      tb_req_idx_q <= vga_line_width / 2 - 1;
+      tb_state_q <= TB_REQ;
+      tb_vert_q <= '0;
+      textbuffer_linebuf_q <= '0;
+    end else if (~fsm_en) begin
       pixel_horz_q <= vga_h_visible_size - 1;
       pixel_vert_q <= vga_v_visible_size - 1;
 
