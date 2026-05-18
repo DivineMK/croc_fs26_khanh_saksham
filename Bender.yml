@@ -51,9 +51,9 @@ sources:
       # Level 2
       - rtl/croc_domain.sv
       # add your design files with modules here
+      - rtl/user_domain/ip_vga_regs.sv
       - rtl/user_domain/ip_vga_timing_fsm.sv
       - rtl/user_domain/ip_vga_fetcher.sv
-      - rtl/user_domain/ip_vga_regs.sv
       - rtl/user_domain/font_rom.sv
       - rtl/user_domain/ip_vga.sv
       - rtl/user_domain.sv
@@ -72,6 +72,7 @@ sources:
 
   - target: any(simulation, verilator)
     files:
+      - rtl/test/tb_ip_vga_pkg.sv
       - rtl/test/tb_croc_pkg.sv
       - rtl/test/croc_vip.sv
       - rtl/test/tb_croc_soc.sv

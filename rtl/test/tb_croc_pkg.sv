@@ -18,7 +18,7 @@ package tb_croc_pkg;
   localparam int unsigned RstCycles = 1;
 
   // UART
-  localparam int unsigned UartBaudRate  = 115200;
+  localparam int unsigned UartBaudRate  = 38400;
   localparam int unsigned UartParityEna = 0;
 
   // Base address of the SRAM banks

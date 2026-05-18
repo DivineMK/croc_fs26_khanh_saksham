@@ -20,7 +20,7 @@
 
 // Frequencies
 #define TB_FREQUENCY        20000000
-#define TB_BAUDRATE         115200
+#define TB_BAUDRATE         38400
 
 // Peripheral configs
 // UART
