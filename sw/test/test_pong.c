@@ -27,6 +27,10 @@ static char wait_for_key(void) {
     return uart_read();
 }
 
+static void uart_puts(const char *s) {
+    while (*s) uart_write(*s++);
+}
+
 static void put_str(int x, int y, const char *s) {
     for (int i = 0; s[i]; i++) put_char(x + i, y, s[i]);
 }
@@ -138,7 +142,7 @@ static void game_tick(void) {
             reset_game();
         }
         if (c == 3) {
-            printf("bye\r\n");
+            uart_puts("bye\r\n");
             while (1);
         }
     }

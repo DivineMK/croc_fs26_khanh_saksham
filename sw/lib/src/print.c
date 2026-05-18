@@ -64,18 +64,18 @@ void printf(const char *fmt, ...) {
         if (*fmt == '%') {
             fmt++;
             switch (*fmt) {
-            // case 'x': // hex
-            //     idx = format_hex32(buffer, va_arg(args, unsigned int));
-            //     for (int j = idx - 1; j >= 0; j--) {
-            //         putchar(buffer[j]);
-            //     }
-            //     break;
-            // case 'd': // dec
-            //     idx = format_dec32(buffer, va_arg(args, int));
-            //     for (int j = idx - 1; j >= 0; j--) {
-            //         putchar(buffer[j]);
-            //     }
-            //     break;
+            case 'x': // hex
+                idx = format_hex32(buffer, va_arg(args, unsigned int));
+                for (int j = idx - 1; j >= 0; j--) {
+                    putchar(buffer[j]);
+                }
+                break;
+            case 'd': // dec
+                idx = format_dec32(buffer, va_arg(args, int));
+                for (int j = idx - 1; j >= 0; j--) {
+                    putchar(buffer[j]);
+                }
+                break;
             case 'c': // char
                 putchar((char)va_arg(args, int));
                 break;

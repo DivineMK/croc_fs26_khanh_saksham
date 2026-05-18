@@ -1,5 +1,5 @@
 #include "vga.h"
-#include "print.h"
+#include "uart.h"
 #include "util.h"
 #include "font_8x8.h"
 
@@ -40,7 +40,7 @@ void clear_screen(void) {
 
 void put_char(int x, int y, char c) {
     if (x < 0 || x >= VGA_COLS || y < 0 || y >= VGA_ROWS) {
-        printf("invalid coordinates\r\n");
+        uart_write('?');
         return;
     }
     int offset = y * VGA_COLS + x;
