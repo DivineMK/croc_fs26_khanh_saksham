@@ -118,7 +118,6 @@ generate_openroad_flist() {
         -t simulation \
         -t verilator \
         -t netlist_openroad \
-        -DSYNTHESIS \
         -DSIMULATION \
         --vlog-arg="-svinputport=compat"
         > compile_openroad.tcl"
@@ -214,7 +213,7 @@ compile_openroad() {
 run_vsim() {
     local SDF_ARGS=""
     if [ "$SDF_EN" = 1 ]; then
-        SDF_ARGS="-sdftyp tb_croc_soc=../openroad/out/${PROJ_NAME}.sdf +sdf_verbose"
+        SDF_ARGS="-sdftyp tb_croc_soc/i_croc_soc=../openroad/out/${PROJ_NAME}.sdf +sdf_verbose -sdfnoerror"
         run_cmd "echo [INFO][VSIM] Loading SDF: ../openroad/out/${PROJ_NAME}.sdf"
     fi
     run_cmd "${VSIM} \
@@ -234,7 +233,7 @@ run_vsim() {
 run_vsim_gui() {
     local SDF_ARGS=""
     if [ "$SDF_EN" = 1 ]; then
-        SDF_ARGS="-sdftyp tb_croc_soc=../openroad/out/${PROJ_NAME}.sdf +sdf_verbose"
+        SDF_ARGS="-sdftyp tb_croc_soc/i_croc_soc=../openroad/out/${PROJ_NAME}.sdf +sdf_verbose -sdfnoerror"
         run_cmd "echo [INFO][VSIM] Loading SDF: ../openroad/out/${PROJ_NAME}.sdf"
     fi
     run_cmd "${VSIM} \
