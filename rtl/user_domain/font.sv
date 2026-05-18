@@ -6,9 +6,10 @@ module font #(
     input  logic                       clk_i,
     input  logic                       rst_ni,
     // Read port
-    input  logic [  FontAddrWidth-1:0] req_addr_i,
-    output logic [  FontDataWidth-1:0] rsp_data_o,
+    input  logic [  FontAddrWidth-1:0] rd_addr_i,
+    output logic [  FontDataWidth-1:0] rd_data_o,
     // Write port
+    input  logic                       rd_req_i,
     input  logic                       wr_req_i,
     input  logic [  FontAddrWidth-1:0] wr_addr_i,
     input  logic [  FontDataWidth-1:0] wr_data_i,
@@ -27,7 +28,7 @@ module font #(
         8'b00000000,  // .XX.XX..
         8'b00000000,  // XXXXXXX.
         8'b00000000,  // XX...XX.
-        8'b00000000   // ........
+        8'b00000000  // ........
       };
     end
   end
@@ -57,18 +58,23 @@ module font #(
     end
   end
 
+  logic                       sram_req;
   logic                       sram_we;
   logic [  FontAddrWidth-1:0] sram_addr;
   logic [  FontDataWidth-1:0] sram_wdata;
   logic [FontDataWidth/8-1:0] sram_be;
   logic [  FontDataWidth-1:0] sram_rdata;
 
+  assign sram_req   = rd_req_i | wr_req_i | ~init_done_q;
   assign sram_we    = ~init_done_q | wr_req_i;
-  assign sram_addr  = ~init_done_q ? init_cnt_q : wr_req_i ? wr_addr_i : req_addr_i;
+  // prioritize init > read > write
+  // currently write is not allowed
+  // TODO: handle buffer for font read and write
+  assign sram_addr  = ~init_done_q ? init_cnt_q : rd_req_i ? rd_addr_i : wr_addr_i;
   assign sram_wdata = ~init_done_q ? font_init_data[init_cnt_q] : wr_data_i;
   assign sram_be    = ~init_done_q ? '1 : wr_be_i;
 
-  assign rsp_data_o = init_done_q ? sram_rdata : '0;
+  assign rd_data_o  = init_done_q ? sram_rdata : '0;
 
   tc_sram_impl #(
       .NumWords (FontSize),
@@ -80,7 +86,7 @@ module font #(
   ) i_sram (
       .clk_i,
       .rst_ni,
-      .req_i  (1'b1),
+      .req_i  (sram_req),
       .we_i   (sram_we),
       .addr_i (sram_addr),
       .wdata_i(sram_wdata),

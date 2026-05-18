@@ -28,8 +28,8 @@ void vga_init(void) {
     *reg32(VGA_REG_BASE_ADDR, VGA_VERT_FRONT_PORCH_OFFSET) = 0x0A;
     *reg32(VGA_REG_BASE_ADDR, VGA_VERT_SYNC_OFFSET)        = 0x02;
     *reg32(VGA_REG_BASE_ADDR, VGA_VERT_BACK_PORCH_OFFSET)  = 0x21;
-    clear_screen();
-    *reg8(VGA_REG_BASE_ADDR, VGA_EN_OFFSET) = 1;
+    *reg8(VGA_REG_BASE_ADDR, FSM_EN_OFFSET)                = 1;
+    *reg8(VGA_REG_BASE_ADDR, VGA_EN_OFFSET)                = 1;
 }
 
 void clear_screen(void) {
