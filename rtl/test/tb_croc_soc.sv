@@ -223,6 +223,7 @@ module tb_croc_soc #(
 
     wait (rst_n === 0);
     @(posedge rst_n);
+    @(posedge i_croc_soc.i_user.i_ip_vga.reg2hw.vga_en);  // wait for first vsync
     @(edge i_croc_soc.vsync_o);  // sync capturing on first vsync
     forever begin
       // before the divided clock, capture the previous values
