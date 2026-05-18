@@ -145,9 +145,9 @@ module tb_croc_soc #(
     // resume core
     i_vip.jtag_resume();
 
+`ifndef TARGET_VGA
     // wait for non-zero return value (written into core status register)
     $display("@%t | [CORE] Wait for end of code...", $time);
-`ifndef TARGET_VGA
     i_vip.jtag_wait_for_eoc(tb_data);
 
     // finish simulation
@@ -161,6 +161,10 @@ module tb_croc_soc #(
     // VGA testbench
     #(ClkPeriodSys);
     @(posedge i_croc_soc.i_user.i_ip_vga.vga_en);  // wait for first vsync
+    `ifdef TRACE_WAVE
+    $dumpvars(0, i_croc_soc);
+    $info("Start dump");
+    `endif
     #(1 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
     #(50 * ClkPeriodSys);
     $info("TIMEOUT");
@@ -226,10 +230,6 @@ module tb_croc_soc #(
     wait (rst_n === 0);
     @(posedge rst_n);
     @(posedge i_croc_soc.i_user.i_ip_vga.vga_en);  // wait for first vsync
-    `ifdef TRACE_WAVE
-    $dumpvars(1, i_croc_soc);
-    $info("Start dump");
-    `endif
     @(edge i_croc_soc.vsync_o);  // sync capturing on first vsync
     forever begin
       // before the divided clock, capture the previous values
