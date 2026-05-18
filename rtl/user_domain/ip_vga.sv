@@ -47,6 +47,7 @@ module ip_vga
 );
   logic timing_ready;
   ip_vga_reg2hw_t reg2hw;
+  (* keep *) logic vga_en;
 
   logic [7:0]  font_wr_addr;
   logic [63:0] font_wr_data;
@@ -55,8 +56,6 @@ module ip_vga
 
   logic [7:0] clk_div;
   logic [7:0] clk_cnt_d, clk_cnt_q;
-
-  // ip_vga_reg_pkg::axi_vga_reg2hw_t reg2hw;
 
   logic [  RedWidth-1:0] red;
   logic [GreenWidth-1:0] green;
@@ -67,6 +66,8 @@ module ip_vga
 
   // Cycle counter to scale the incoming clock
   assign clk_cnt_d = (clk_cnt_q < (clk_div - 1)) ? clk_cnt_q + 8'b0000_0001 : 8'b0;
+
+  assign vga_en = reg2hw.vga_en;
 
   // Registers
   ip_vga_regs #(
