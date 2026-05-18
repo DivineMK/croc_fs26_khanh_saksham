@@ -21,7 +21,7 @@ switch $proj {
             CONFIG.PRIM_IN_FREQ {200.000} \
             CONFIG.CLKOUT1_USED {true} \
             CONFIG.CLK_OUT1_PORT {clk_20} \
-            CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {20.000} \
+            CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {50.000} \
             CONFIG.CLKIN1_JITTER_PS {50.0} \
             CONFIG.MMCM_CLKFBOUT_MULT_F {6.000} \
             CONFIG.MMCM_CLKIN1_PERIOD {5.000} \

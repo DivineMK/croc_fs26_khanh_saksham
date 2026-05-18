@@ -46,7 +46,7 @@ module ip_vga
     output logic [ BlueWidth-1:0] blue_o
 );
   logic timing_ready;
-  ip_vga_reg2hw_t reg2hw;
+  (* dont_touch = "yes" *) (* mark_debug = "true" *) ip_vga_reg2hw_t reg2hw;
 
   logic [7:0] clk_div;
   logic [7:0] clk_cnt_d, clk_cnt_q;

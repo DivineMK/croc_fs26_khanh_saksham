@@ -7,8 +7,8 @@ package ip_vga_config_pkg;
   localparam int unsigned FontHeightLog = $clog2(FontHeight);
   localparam int unsigned FontDataWidth = 64;  // font word size
 
-  localparam int unsigned LineCharWidth = 80; // 1920px/8=240
-  localparam int unsigned LineCharHeight = 60; // 1200px/8=150
+  localparam int unsigned LineCharWidth = 80;  // 1920px/8=240
+  localparam int unsigned LineCharHeight = 60;  // 1200px/8=150
 
   // OBI parameters -> use ObiCfg
   // localparam int unsigned ObiDataWidth = 32;  // obi width
@@ -31,7 +31,7 @@ package ip_vga_config_pkg;
   localparam int unsigned VertSyncSize = 32'h00000002;
 
   localparam int unsigned ClkDiv = 2;
-  localparam logic ControlEnable = 1;
+  // localparam logic ControlEnable = 1;
   localparam logic ControlHsyncPol = 0;
   localparam logic ControlVsyncPol = 0;
 endpackage
