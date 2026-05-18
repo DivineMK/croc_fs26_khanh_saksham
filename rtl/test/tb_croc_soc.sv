@@ -9,7 +9,7 @@
 `define TRACE_WAVE
 
 module tb_croc_soc #(
-  parameter int unsigned GpioCount = 32
+  parameter int unsigned GpioCount = 18
 );
 
   import tb_croc_pkg::*;
@@ -35,6 +35,14 @@ module tb_croc_soc #(
   logic [GpioCount-1:0] gpio_in;
   logic [GpioCount-1:0] gpio_out;
   logic [GpioCount-1:0] gpio_out_en;
+
+  // VGA
+  `ifdef TARGET_VGA
+  logic hsync, vsync;
+  logic [RedWidth-1:0] red;
+  logic [GreenWidth-1:0] green;
+  logic [BlueWidth-1:0] blue;
+  `endif
 
   // Signals controlled by the testbench
 
@@ -126,20 +134,13 @@ module tb_croc_soc #(
         .gpio15_io(gpio_io_tb[15]),
         .gpio16_io(gpio_io_tb[16]),
         .gpio17_io(gpio_io_tb[17]),
-        .gpio18_io(gpio_io_tb[18]),
-        .gpio19_io(gpio_io_tb[19]),
-        .gpio20_io(gpio_io_tb[20]),
-        .gpio21_io(gpio_io_tb[21]),
-        .gpio22_io(gpio_io_tb[22]),
-        .gpio23_io(gpio_io_tb[23]),
-        .gpio24_io(gpio_io_tb[24]),
-        .gpio25_io(gpio_io_tb[25]),
-        .gpio26_io(gpio_io_tb[26]),
-        .gpio27_io(gpio_io_tb[27]),
-        .gpio28_io(gpio_io_tb[28]),
-        .gpio29_io(gpio_io_tb[29]),
-        .gpio30_io(gpio_io_tb[30]),
-        .gpio31_io(gpio_io_tb[31]),
+        `ifdef TARGET_VGA
+        .hsync_o       (hsync),
+        .vsync_o       (vsync),
+        .red_o         (red),
+        .green_o       (green),
+        .blue_o        (blue),
+        `endif
         .jtag_tck_i (jtag_tck  ),
         .jtag_tdi_i (jtag_tdi  ),
         .jtag_tdo_o (jtag_tdo  ),
@@ -171,6 +172,13 @@ module tb_croc_soc #(
     .jtag_trst_ni  ( jtag_trst_n ),
     .uart_rx_i     ( uart_rx     ),
     .uart_tx_o     ( uart_tx     ),
+    `ifdef TARGET_VGA
+    .hsync_o       (hsync),
+    .vsync_o       (vsync),
+    .red_o         (red),
+    .green_o       (green),
+    .blue_o        (blue),
+    `endif
     .gpio_i        ( gpio_in     ),
     .gpio_o        ( gpio_out    ),
     .gpio_out_en_o ( gpio_out_en )
@@ -209,6 +217,10 @@ module tb_croc_soc #(
     i_vip.jtag_resume();
 
 `ifndef TARGET_VGA
+    `ifdef TRACE_WAVE
+    $dumpvars(0, i_croc_soc);
+    $info("Start dump");
+    `endif
     // wait for non-zero return value (written into core status register)
     $display("@%t | [CORE] Wait for end of code...", $time);
     i_vip.jtag_wait_for_eoc(tb_data);
@@ -220,15 +232,13 @@ module tb_croc_soc #(
   end
 
 `ifdef TARGET_VGA
+`ifndef TARGET_NETLIST_OPENROAD
   initial begin
     // VGA testbench
     #(ClkPeriodSys);
     @(posedge i_croc_soc.i_user.i_ip_vga.vga_en);  // wait for first vsync
-    `ifdef TRACE_WAVE
-    $dumpvars(0, i_croc_soc);
-    $info("Start dump");
-    `endif
-    #(1 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
+    #(2 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
+    //#(10 * ClkPeriodSys * ClkDiv * FullRenderWidth);
     #(50 * ClkPeriodSys);
     $info("TIMEOUT");
     $finish();
@@ -293,12 +303,12 @@ module tb_croc_soc #(
     wait (rst_n === 0);
     @(posedge rst_n);
     @(posedge i_croc_soc.i_user.i_ip_vga.vga_en);  // wait for first vsync
-    @(edge i_croc_soc.vsync_o);  // sync capturing on first vsync
+    @(edge vsync);  // sync capturing on first vsync
     forever begin
       // before the divided clock, capture the previous values
       if (clk_div_counter == '0) begin
-        hsync_prev = i_croc_soc.hsync_o;
-        vsync_prev = i_croc_soc.vsync_o;
+        hsync_prev = hsync;
+        vsync_prev = vsync;
       end
 
       @(posedge sys_clk);
@@ -313,7 +323,7 @@ module tb_croc_soc #(
       end
 
       // start capturing frame after vsync pulse
-      if (vsync_prev == ControlVsyncPol && i_croc_soc.vsync_o == ~ControlVsyncPol) begin
+      if (vsync_prev == ControlVsyncPol && vsync == ~ControlVsyncPol) begin
         vsync_porch = 0;
         hsync_porch = 0;
         row = 0;
@@ -325,7 +335,7 @@ module tb_croc_soc #(
 
       // skip vertical back porch
       if (capturing && vsync_porch < VertBackPorchSize) begin
-        if (hsync_prev == ControlHsyncPol && i_croc_soc.hsync_o == ~ControlHsyncPol) begin
+        if (hsync_prev == ControlHsyncPol && hsync == ~ControlHsyncPol) begin
           vsync_porch++;
         end
         continue;
@@ -335,7 +345,7 @@ module tb_croc_soc #(
       // capture lines with visible area
       if (capturing && row < FrameHeight) begin
         // start capturing current line after hsync pulse
-        if (hsync_prev == ControlHsyncPol && i_croc_soc.hsync_o == ~ControlHsyncPol) begin
+        if (hsync_prev == ControlHsyncPol && hsync == ~ControlHsyncPol) begin
           hsync_porch = 0;
           col = 0;
           row++;
@@ -351,10 +361,10 @@ module tb_croc_soc #(
 
         // capture pixel in visible area of this line
         if (col < FrameWidth) begin
-          framebuffer[row][col].r = i_croc_soc.red_o;
-          framebuffer[row][col].g = i_croc_soc.green_o;
-          framebuffer[row][col].b = i_croc_soc.blue_o;
-          // if ({i_croc_soc.red_o, i_croc_soc.green_o, i_croc_soc.blue_o} == 16'b0) begin
+          framebuffer[row][col].r = red;
+          framebuffer[row][col].g = green;
+          framebuffer[row][col].b = blue;
+          // if ({red, green, blue} == 16'b0) begin
           //   $info("Error at time %0t in row %0d col %0d", $time, row, col);
           // end
           col++;
@@ -369,6 +379,7 @@ module tb_croc_soc #(
       end
     end
   end
+`endif
 `endif
 
   ////////////////
