@@ -72,6 +72,7 @@ sources:
 
   - target: netlist_openroad
     files:
+      - ihp13/empty_cells.v
       - openroad/out/croc.v
 
   - target: any(simulation, verilator)
