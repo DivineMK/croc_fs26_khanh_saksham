@@ -15,9 +15,9 @@ void font_init(void) {
 
 void vga_init(void) {
     font_init();
+    *reg32(VGA_REG_BASE_ADDR, VGA_EN_OFFSET)               = 0;
     *reg32(VGA_REG_BASE_ADDR, VGA_TB_ADDR_OFFSET)          = VGA_TB_BASE_ADDR;
     *reg32(VGA_REG_BASE_ADDR, VGA_CLK_DIV_OFFSET)          = 2;
-    *reg32(VGA_REG_BASE_ADDR, VGA_EN_OFFSET)               = 0;
     *reg32(VGA_REG_BASE_ADDR, VGA_HSYNC_POL_OFFSET)        = 1;
     *reg32(VGA_REG_BASE_ADDR, VGA_VSYNC_POL_OFFSET)        = 1;
     *reg32(VGA_REG_BASE_ADDR, VGA_LINE_WIDTH_OFFSET)       = VGA_COLS;
