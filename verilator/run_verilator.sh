@@ -89,6 +89,7 @@ generate_flist() {
     run_cmd "echo [INFO][Bender] Generate croc.f"
     run_cmd "bender \
         script flist-plus \
+        ${BENDER_FLAGS:-} \
         -t rtl \
         -t verilator \
         -t synthesis \

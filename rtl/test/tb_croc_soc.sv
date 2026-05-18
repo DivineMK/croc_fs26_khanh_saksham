@@ -147,12 +147,16 @@ module tb_croc_soc #(
 
     // wait for non-zero return value (written into core status register)
     $display("@%t | [CORE] Wait for end of code...", $time);
-    // i_vip.jtag_wait_for_eoc(tb_data);
+`ifndef TARGET_VGA
+    i_vip.jtag_wait_for_eoc(tb_data);
 
     // finish simulation
     repeat(50) @(posedge sys_clk);
+    $finish();
+`endif
   end
 
+`ifdef TARGET_VGA
   initial begin
     // VGA testbench
     #(ClkPeriodSys);
@@ -163,7 +167,6 @@ module tb_croc_soc #(
     $finish();
   end
 
-  // VGA testbench
   pixel_t framebuffer[FrameHeight][FrameWidth];
 
   task write_frame_to_bmp(string file);
@@ -210,7 +213,6 @@ module tb_croc_soc #(
     $fclose(fd_debug);
     $fclose(fd);
   endtask
-
 
   initial begin : frame_capture
     automatic int clk_div_counter = 0;
@@ -300,6 +302,7 @@ module tb_croc_soc #(
       end
     end
   end
+`endif
 
   ////////////////
   //  Waveform  //
