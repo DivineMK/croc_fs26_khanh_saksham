@@ -440,9 +440,10 @@ module croc_domain import croc_pkg::*; #(
   // -----------------
   // Memories
   // -----------------
-  localparam int unsigned SramBankAddrWidth = cf_math_pkg::idx_width(SramBankNumWords);
 
   for (genvar i = 0; i < NumSramBanks; i++) begin : gen_sram_bank
+    localparam int unsigned SramBankAddrWidth = cf_math_pkg::idx_width(SramBankNumWords[i]);
+
     logic bank_req, bank_we, bank_gnt, bank_single_err;
     logic [SbrObiCfg.AddrWidth-1:0] bank_byte_addr;
     logic [SramBankAddrWidth-1:0] bank_word_addr;
@@ -473,7 +474,7 @@ module croc_domain import croc_pkg::*; #(
     assign bank_word_addr = bank_byte_addr[SbrObiCfg.AddrWidth-1:2];
 
     tc_sram_impl #(
-      .NumWords  ( SramBankNumWords ),
+      .NumWords  ( SramBankNumWords[i] ),
       .DataWidth ( 32 ),
       .NumPorts  (  1 ),
       .Latency   (  1 )

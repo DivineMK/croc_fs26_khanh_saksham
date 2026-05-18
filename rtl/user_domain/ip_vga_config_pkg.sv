@@ -32,6 +32,6 @@ package ip_vga_config_pkg;
 
   localparam int unsigned ClkDiv = 2;
   // localparam logic ControlEnable = 1;
-  localparam logic ControlHsyncPol = 0;
-  localparam logic ControlVsyncPol = 0;
+  localparam logic ControlHsyncPol = 1;
+  localparam logic ControlVsyncPol = 1;
 endpackage
