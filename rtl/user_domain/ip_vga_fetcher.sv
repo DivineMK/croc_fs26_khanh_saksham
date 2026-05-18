@@ -34,10 +34,12 @@ module ip_vga_fetcher #(
       textbuffer_linebuf_q;  // line buffer for fetching char code from text buffer (TB)
   logic [1:0][FontWidth-1:0]
       bitmap_buffer_d, bitmap_buffer_q;  // bitmap buffer for fetching from font
-  logic [31:0] pixel_horz_q, pixel_horz_d, pixel_vert_q, pixel_vert_d;  // coordinate in pixel unit
-  logic [28:0] char_horz;  // coordinate in char unit
+  logic [$clog2(LineCharWidth*FontWidth)-1:0] pixel_horz_q, pixel_horz_d;
+  logic [$clog2(LineCharHeight*FontHeight)-1:0]
+      pixel_vert_q, pixel_vert_d;  // coordinate in pixel unit
+  logic [$clog2(LineCharWidth)-1:0] char_horz;  // coordinate in char unit
 
-  assign char_horz = pixel_horz_q >> $clog2(FontWidth);
+  assign char_horz = pixel_horz_q[$clog2(LineCharWidth*FontWidth)-1:$clog2(FontWidth)];
 
   // font request
   logic [$bits(reg2hw_i.vga_line_width)-1:0]
@@ -52,7 +54,8 @@ module ip_vga_fetcher #(
   logic [$clog2(TBSize)-1:0]
       tb_req_idx_d, tb_req_idx_q;  // index for request from TB and write to textbuffer_linebuf
   obi_req_t obi_tb_req;
-  logic [31:0] tb_vert_q, tb_vert_d;  // coordinate for request from TB, in char unit vertically
+  logic [$clog2(LineCharHeight)-1:0]
+      tb_vert_q, tb_vert_d;  // coordinate for request from TB, in char unit vertically
   // TB response
   obi_rsp_t obi_tb_rsp;
   logic tb_valid;
@@ -112,6 +115,8 @@ module ip_vga_fetcher #(
     textbuffer_linebuf_d = textbuffer_linebuf_q;
     tb_req_idx_d = tb_req_idx_q;
     tb_vert_d = tb_vert_q;
+
+    obi_tb_req.a.addr = '0;  // prevent latch at lower bits
     obi_tb_req.a.addr[AddrWidth-1:2] = reg2hw_i.tb_addr[AddrWidth-1:2] + tb_vert_q * (LineCharWidth/2) 
                 + (LineCharWidth/2 - 1 - tb_req_idx_q); // tb_req_idx is down counting, tb_req is up counting
     obi_tb_req.req = '0;  // default to prefetch

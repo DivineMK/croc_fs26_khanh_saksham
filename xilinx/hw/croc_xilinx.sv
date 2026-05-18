@@ -277,14 +277,14 @@ module croc_xilinx import croc_pkg::*; #(
   );
 
 
-`ifdef USE_VGA
-`ifdef USE_ILA
-  `ILA(ila_vga_hsync, vga_hsync_o)
-  `ILA(ila_vga_vsync, vga_vsync_o)
-  `ILA(ila_vga_red, vga_red_o)
-  `ILA(ila_vga_green, vga_green_o)
-  `ILA(ila_vga_blue, vga_blue_o)
-`endif
-`endif
+// `ifdef USE_VGA
+// `ifdef USE_ILA
+//   `ILA(ila_vga_hsync, vga_hsync_o)
+//   `ILA(ila_vga_vsync, vga_vsync_o)
+//   `ILA(ila_vga_red, vga_red_o)
+//   `ILA(ila_vga_green, vga_green_o)
+//   `ILA(ila_vga_blue, vga_blue_o)
+// `endif
+// `endif
 
 endmodule

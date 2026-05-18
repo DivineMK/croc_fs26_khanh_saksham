@@ -1,0 +1,5 @@
+{
+  "flags": "--top croc_soc",
+  "build": "verilator/croc.f",
+  "buildRelativePaths": true
+}

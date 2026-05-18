@@ -23,18 +23,18 @@ module ip_vga_regs
   // read-write registers
   logic [31:0] tb_addr_d, tb_addr_q;
   logic [7:0] clk_div_d, clk_div_q;
-  (* dont_touch = "yes" *) (* mark_debug = "true" *) logic vga_en_d, vga_en_q;
-  (* dont_touch = "yes" *) (* mark_debug = "true" *) logic vga_hsync_pol_d, vga_hsync_pol_q;
-  (* dont_touch = "yes" *) (* mark_debug = "true" *) logic vga_vsync_pol_d, vga_vsync_pol_q;
+  logic vga_en_d, vga_en_q;
+  logic vga_hsync_pol_d, vga_hsync_pol_q;
+  logic vga_vsync_pol_d, vga_vsync_pol_q;
   logic [7:0] vga_line_width_d, vga_line_width_q;
   logic [7:0] vga_line_height_d, vga_line_height_q;
 
-  logic [15:0] vga_horz_front_porch_d, vga_horz_front_porch_q;
-  logic [15:0] vga_horz_sync_d, vga_horz_sync_q;
-  logic [15:0] vga_horz_back_porch_d, vga_horz_back_porch_q;
-  logic [15:0] vga_vert_front_porch_d, vga_vert_front_porch_q;
-  logic [15:0] vga_vert_sync_d, vga_vert_sync_q;
-  logic [15:0] vga_vert_back_porch_d, vga_vert_back_porch_q;
+  logic [7:0] vga_horz_front_porch_d, vga_horz_front_porch_q;
+  logic [7:0] vga_horz_sync_d, vga_horz_sync_q;
+  logic [7:0] vga_horz_back_porch_d, vga_horz_back_porch_q;
+  logic [7:0] vga_vert_front_porch_d, vga_vert_front_porch_q;
+  logic [7:0] vga_vert_sync_d, vga_vert_sync_q;
+  logic [7:0] vga_vert_back_porch_d, vga_vert_back_porch_q;
 
   `FF(tb_addr_q, tb_addr_d, '0, clk_i, rst_ni)
   `FF(clk_div_q, clk_div_d, 8'h2, clk_i, rst_ni)
@@ -89,6 +89,16 @@ module ip_vga_regs
     tb_addr_d = tb_addr_q;
     clk_div_d = clk_div_q;
     vga_en_d  = vga_en_q;
+    vga_hsync_pol_d = vga_hsync_pol_q;
+    vga_vsync_pol_d = vga_vsync_pol_q;
+    vga_line_width_d = vga_line_width_q;
+    vga_line_height_d = vga_line_height_q;
+    vga_horz_front_porch_d = vga_horz_front_porch_q;
+    vga_horz_sync_d = vga_horz_sync_q;
+    vga_horz_back_porch_d = vga_horz_back_porch_q;
+    vga_vert_front_porch_d = vga_vert_front_porch_q;
+    vga_vert_sync_d = vga_vert_sync_q;
+    vga_vert_back_porch_d = vga_vert_back_porch_q;
 
     if (obi_req_i.req && obi_req_i.a.we) begin
       unique case ({
@@ -101,12 +111,12 @@ module ip_vga_regs
         VGA_VSYNC_POL_OFFSET:        vga_vsync_pol_d = obi_req_i.a.wdata[0] & be_mask[0];
         VGA_LINE_WIDTH_OFFSET:       vga_line_width_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
         VGA_LINE_HEIGHT_OFFSET:      vga_line_height_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
-        VGA_HORZ_FRONT_PORCH_OFFSET: vga_horz_front_porch_d = obi_req_i.a.wdata[15:0] & be_mask[15:0];
-        VGA_HORZ_SYNC_OFFSET:        vga_horz_sync_d = obi_req_i.a.wdata[15:0] & be_mask[15:0];
-        VGA_HORZ_BACK_PORCH_OFFSET:  vga_horz_back_porch_d = obi_req_i.a.wdata[15:0] & be_mask[15:0];
-        VGA_VERT_FRONT_PORCH_OFFSET: vga_vert_front_porch_d = obi_req_i.a.wdata[15:0] & be_mask[15:0];
-        VGA_VERT_SYNC_OFFSET:        vga_vert_sync_d = obi_req_i.a.wdata[15:0] & be_mask[15:0];
-        VGA_VERT_BACK_PORCH_OFFSET:  vga_vert_back_porch_d = obi_req_i.a.wdata[15:0] & be_mask[15:0];
+        VGA_HORZ_FRONT_PORCH_OFFSET: vga_horz_front_porch_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
+        VGA_HORZ_SYNC_OFFSET:        vga_horz_sync_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
+        VGA_HORZ_BACK_PORCH_OFFSET:  vga_horz_back_porch_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
+        VGA_VERT_FRONT_PORCH_OFFSET: vga_vert_front_porch_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
+        VGA_VERT_SYNC_OFFSET:        vga_vert_sync_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
+        VGA_VERT_BACK_PORCH_OFFSET:  vga_vert_back_porch_d = obi_req_i.a.wdata[7:0] & be_mask[7:0];
 
         default: ;  // invalid address: no write, error signalled in R phase
       endcase
@@ -132,12 +142,12 @@ module ip_vga_regs
           VGA_VSYNC_POL_OFFSET: obi_rsp_o.r.rdata = {31'h0, vga_vsync_pol_q};
           VGA_LINE_WIDTH_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_line_width_q};
           VGA_LINE_HEIGHT_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_line_height_q};
-          VGA_HORZ_FRONT_PORCH_OFFSET: obi_rsp_o.r.rdata = {16'h0, vga_horz_front_porch_q};
-          VGA_HORZ_SYNC_OFFSET: obi_rsp_o.r.rdata = {16'h0, vga_horz_sync_q};
-          VGA_HORZ_BACK_PORCH_OFFSET: obi_rsp_o.r.rdata = {16'h0, vga_horz_back_porch_q};
-          VGA_VERT_FRONT_PORCH_OFFSET: obi_rsp_o.r.rdata = {16'h0, vga_vert_front_porch_q};
-          VGA_VERT_SYNC_OFFSET: obi_rsp_o.r.rdata = {16'h0, vga_vert_sync_q};
-          VGA_VERT_BACK_PORCH_OFFSET: obi_rsp_o.r.rdata = {16'h0, vga_vert_back_porch_q};
+          VGA_HORZ_FRONT_PORCH_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_horz_front_porch_q};
+          VGA_HORZ_SYNC_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_horz_sync_q};
+          VGA_HORZ_BACK_PORCH_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_horz_back_porch_q};
+          VGA_VERT_FRONT_PORCH_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_vert_front_porch_q};
+          VGA_VERT_SYNC_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_vert_sync_q};
+          VGA_VERT_BACK_PORCH_OFFSET: obi_rsp_o.r.rdata = {24'h0, vga_vert_back_porch_q};
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;
