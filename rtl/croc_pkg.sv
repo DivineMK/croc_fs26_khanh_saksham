@@ -56,9 +56,9 @@ package croc_pkg;
   // and then make sure it is implemented as an option in tc_sram_impl.sv
 
   /// Number of SRAM banks, each bank has its own OBI port (accessible in parallel)
-  localparam int unsigned NumSramBanks      = 32'd2;
+  localparam int unsigned NumSramBanks      = 32'd4;
   /// Number of 32-bit words per SRAM bank, determines the depth of each SRAM bank
-  localparam int unsigned SramBankNumWords[NumSramBanks]  = '{1024, 4096};
+  localparam int unsigned SramBankNumWords[NumSramBanks]  = '{1024, 1024, 1024, 1024}; // split to smaller SRAMs to fit macros
   // localparam int unsigned SramBankNumWords  = 512;
 
 
@@ -92,11 +92,13 @@ package croc_pkg;
   } croc_xbar_outputs_e;
 
   /// Address map given to the main crossbar
-  localparam addr_map_rule_t [3:0] CrocAddrMap = '{
+  localparam addr_map_rule_t [5:0] CrocAddrMap = '{
     '{ idx: XbarPeriph,  start_addr: 32'h0000_0000, end_addr: 32'h1000_0000 },
     '{ idx: XbarUser,    start_addr: 32'h2000_0000, end_addr: 32'h8000_0000 },
-    '{ idx: XbarBank0,   start_addr: 32'h1000_0000, end_addr: 32'h1000_1000 }, // 4KB
-    '{ idx: XbarBank0+1, start_addr: 32'h1000_1000, end_addr: 32'h1000_5000 }  // > 9600B (80x60x2B) text buffer
+    '{ idx: XbarBank0,   start_addr: 32'h1000_0000, end_addr: 32'h1000_1000 }, // 4KB reserved for instructions and stack
+    '{ idx: XbarBank0+1, start_addr: 32'h1000_1000, end_addr: 32'h1000_2000 }, // 3072 > 2400 words (80x60x2B) text buffer
+    '{ idx: XbarBank0+2, start_addr: 32'h1000_2000, end_addr: 32'h1000_3000 },
+    '{ idx: XbarBank0+3, start_addr: 32'h1000_3000, end_addr: 32'h1000_4000 }
   };
 
   // +1 for additional OBI error
