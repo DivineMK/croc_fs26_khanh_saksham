@@ -92,7 +92,7 @@ generate_netlist_flist() {
         -t vsim \
         -t simulation \
         -t verilator \
-        -t netlist_yosys \
+        -t netlist_openroad \
         -DSYNTHESIS \
         -DSIMULATION \
         --vlog-arg="-svinputport=compat"
@@ -167,6 +167,7 @@ run_vsim() {
         -c \
         tb_croc_soc \
         -t 1ns \
+        -voptargs=+acc \
         -suppress vsim-3009 \
         -suppress vsim-8683 \
         -suppress vsim-8386 \
