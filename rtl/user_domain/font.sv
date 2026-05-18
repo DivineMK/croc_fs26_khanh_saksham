@@ -77,7 +77,7 @@ module font #(
       .NumPorts (1),
       .Latency  (1),
       .SimInit  ("none")
-  ) i_tc_sram (
+  ) i_sram (
       .clk_i,
       .rst_ni,
       .req_i  (1'b1),
