@@ -1,9 +1,7 @@
-import ip_vga_config_pkg::*;
-
-module font_rom #(
-    parameter int unsigned FontSize = FontSize,
+module font #(
+    parameter int unsigned FontSize = 256,
     parameter int unsigned FontAddrWidth = $clog2(FontSize),
-    parameter int unsigned FontDataWidth = FontDataWidth
+    parameter int unsigned FontDataWidth = 64
 ) (
     input  logic                       clk_i,
     input  logic                       rst_ni,
@@ -29,7 +27,7 @@ module font_rom #(
         8'b01101100,  // .XX.XX..
         8'b11111110,  // XXXXXXX.
         8'b11000110,  // XX...XX.
-        8'b00000000  // ........
+        8'b00000000   // ........
       };
     end
   end

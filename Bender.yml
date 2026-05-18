@@ -54,7 +54,7 @@ sources:
       - rtl/user_domain/ip_vga_regs.sv
       - rtl/user_domain/ip_vga_timing_fsm.sv
       - rtl/user_domain/ip_vga_fetcher.sv
-      - rtl/user_domain/font_rom.sv
+      - rtl/user_domain/font.sv
       - rtl/user_domain/ip_vga.sv
       - rtl/user_domain.sv
       # Level 3

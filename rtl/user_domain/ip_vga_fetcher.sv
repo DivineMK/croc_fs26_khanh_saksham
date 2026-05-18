@@ -80,7 +80,7 @@ module ip_vga_fetcher #(
   } tb_state_t;
   tb_state_t tb_state_q, tb_state_d;
 
-  font_rom #(
+  font #(
       .FontSize(FontSize),
       .FontDataWidth(FontDataWidth)
   ) i_font (
