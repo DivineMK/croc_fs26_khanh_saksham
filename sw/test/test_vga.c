@@ -2,6 +2,7 @@
 #include "util.h"
 #include "print.h"
 #include "config.h"
+#include "font_8x8.h"
 
 #define VGA_TB_BASE_ADDR            0x10001000
 #define VGA_REG_BASE_ADDR           0x20000000
@@ -18,73 +19,53 @@
 #define VGA_VERT_FRONT_PORCH_OFFSET 0x28
 #define VGA_VERT_SYNC_OFFSET        0x2C
 #define VGA_VERT_BACK_PORCH_OFFSET  0x30
-#define VGA_FONT_SRAM_OFFSET        0x100
+#define VGA_FONT_SRAM_OFFSET        0x200 // skip 0-31 control characters
+
+#define LINE_WIDTH                  80
+#define LINE_HEIGHT                 60
 
 void font_init(void) {
-    // 4 font patterns, each 8 rows of 8 pixels.
-    // The same 4 patterns repeat for all 256 entries.
-    static const uint8_t font_data[4][8] = {
-        { // Pattern 0: 'A'
-            0b00000000, // ........
-            0b00010000, // ...X....
-            0b00111000, // ..XXX...
-            0b01101100, // .XX.XX..
-            0b01101100, // .XX.XX..
-            0b11111110, // XXXXXXX.
-            0b11000110, // XX...XX.
-            0b00000000, // ........
-        },
-        { // Pattern 1: 'B'
-            0b00000000, // ........
-            0b11111100, // XXXXXX..
-            0b01100110, // .XX..XX.
-            0b01111100, // .XXXXX..
-            0b01100110, // .XX..XX.
-            0b01100110, // .XX..XX.
-            0b11111100, // XXXXXX..
-            0b00000000, // ........
-        },
-        { // Pattern 2: 'C'
-            0b00000000, // ........
-            0b01111100, // .XXXXX..
-            0b11000110, // XX...XX.
-            0b11000000, // XX......
-            0b11000000, // XX......
-            0b11000110, // XX...XX.
-            0b01111100, // .XXXXX..
-            0b00000000, // ........
-        },
-        { // Pattern 3: 'D'
-            0b00000000, // ........
-            0b11111100, // XXXXXX..
-            0b01100110, // .XX..XX.
-            0b01100110, // .XX..XX.
-            0b01100110, // .XX..XX.
-            0b01100110, // .XX..XX.
-            0b11111100, // XXXXXX..
-            0b00000000, // ........
-        },
-    };
-
-    for (int i = 0; i < 256; i++) {
-        const uint8_t *ch = font_data[i % 4];
-        // RTL stores font word as {row7,...,row0} = [63:0] where row7 is top.
-        // OBI addr[2]=0 writes to [31:0], addr[2]=1 to [63:32].
-        // Upper word [63:32] gets top 4 rows (ch[0..3]), lower word [31:0] gets bottom 4 (ch[4..7]).
-        uint32_t hi = ((uint32_t)ch[0] << 24) | ((uint32_t)ch[1] << 16)
-                    | ((uint32_t)ch[2] <<  8) |  (uint32_t)ch[3];
-        uint32_t lo = ((uint32_t)ch[4] << 24) | ((uint32_t)ch[5] << 16)
-                    | ((uint32_t)ch[6] <<  8) |  (uint32_t)ch[7];
+    for (int i = 0; i < 96; i++) {
+        // font in font_8x8.h
+        const uint8_t *ch = fontdata_8x8[i];
+        uint32_t hi = ((uint32_t)ch[0] << 24) | ((uint32_t)ch[1] << 16) | ((uint32_t)ch[2] << 8) | (uint32_t)ch[3];
+        uint32_t lo = ((uint32_t)ch[4] << 24) | ((uint32_t)ch[5] << 16) | ((uint32_t)ch[6] << 8) | (uint32_t)ch[7];
         *reg32(VGA_REG_BASE_ADDR, VGA_FONT_SRAM_OFFSET + 8 * i)     = lo;
         *reg32(VGA_REG_BASE_ADDR, VGA_FONT_SRAM_OFFSET + 8 * i + 4) = hi;
     }
 }
 
+void clear_screen(void) {
+    for (int i = 0; i < LINE_WIDTH * LINE_HEIGHT / 2; i++) {
+        *reg32(VGA_TB_BASE_ADDR, i * 4) = 0;
+    }
+}
+
+void screen_up(void) {
+    int32_t offset, buffer;
+
+    offset = 0;
+    for (; offset < (LINE_HEIGHT - 1) * LINE_WIDTH / 2; offset++)
+        *reg32(VGA_TB_BASE_ADDR, offset * 4) = *reg32(VGA_TB_BASE_ADDR, (offset + LINE_WIDTH / 2) * 4);
+    for (; offset < LINE_HEIGHT * LINE_WIDTH / 2; offset++) *reg32(VGA_TB_BASE_ADDR, offset * 4) = 0;
+    *reg32(VGA_REG_BASE_ADDR, VGA_EN_OFFSET) = 1;
+}
+
+void screen_down(void) {
+    int32_t offset, buffer;
+
+    for (offset = LINE_HEIGHT * LINE_WIDTH / 2 - 1; offset >= LINE_WIDTH / 2; offset--)
+        *reg32(VGA_TB_BASE_ADDR, offset * 4) = *reg32(VGA_TB_BASE_ADDR, (offset - LINE_WIDTH / 2) * 4);
+    for (offset = LINE_WIDTH / 2 - 1; offset >= 0; offset--) *reg32(VGA_TB_BASE_ADDR, offset * 4) = 0;
+    *reg32(VGA_REG_BASE_ADDR, VGA_EN_OFFSET) = 1;
+}
+
 int main() {
     uart_init();
     printf("Hello VGA!\r\n");
+    clear_screen();
 
-    // font_init();
+    font_init();
     // printf("Font initialized\r\n");
 
     *reg32(VGA_REG_BASE_ADDR, VGA_TB_ADDR_OFFSET)          = VGA_TB_BASE_ADDR;
@@ -101,15 +82,65 @@ int main() {
     *reg32(VGA_REG_BASE_ADDR, VGA_VERT_SYNC_OFFSET)        = 0x02;
     *reg32(VGA_REG_BASE_ADDR, VGA_VERT_BACK_PORCH_OFFSET)  = 0x21;
 
-    for (int i = 0; i < 25; i += 1) {
-        for (int j = 0; j < 80 / 2; j += 1) {
-            *reg32(VGA_TB_BASE_ADDR, (i * 80 / 2 + j) * 4) =
-                (((j & 0x1) << 1 | (i & 0x1)) << 16) | ((i & 0x1) << 1 | (j & 0x1));
+    uint32_t char_pos_x = 0, char_pos_y = 0, offset = 0;
+    uint32_t buffer = 0;
+    uint8_t idx;
+
+    for (int offset = 0; offset < 96 / 2; offset += 1) {
+        buffer                               = offset * 2 + 32;
+        *reg32(VGA_TB_BASE_ADDR, offset * 4) = ((buffer + 1) << 16) | buffer;
+    }
+    *reg8(VGA_REG_BASE_ADDR, VGA_EN_OFFSET) = 1;
+
+    while (1) {
+        while (uart_read_ready()) {
+            char c = uart_read();
+            switch (c) {
+            case '\r':
+            case '\n':
+                printf("\\r received\r\n");
+                char_pos_x = 0;
+                char_pos_y += 1;
+                if (char_pos_y >= LINE_HEIGHT) {
+                    char_pos_y = 0;
+                }
+                break;
+            case 'j':
+                printf("char_pos_x: %d, char_pos_y: %d - %d:%c\r\n", char_pos_x, char_pos_y, c, c);
+                screen_down();
+                break;
+            case 'k':
+                printf("char_pos_x: %d, char_pos_y: %d - %d:%c\r\n", char_pos_x, char_pos_y, c, c);
+                screen_up();
+                break;
+            case 12:
+                clear_screen();
+                char_pos_x = 0;
+                char_pos_y = 0;
+                break;
+            case 3:
+                printf("Ctrl-C received, exiting...\r\n");
+                while (1);
+            default:
+                offset = char_pos_y * LINE_WIDTH + char_pos_x;
+                idx    = char_pos_x & 1;
+                buffer = *reg32(VGA_TB_BASE_ADDR, offset / 2 * 4);
+                buffer |= ((uint32_t)c << (16 * idx));
+                printf("char_pos_x: %d, char_pos_y: %d - %d:%c\r\n", char_pos_x, char_pos_y, c, c);
+                *reg32(VGA_TB_BASE_ADDR, offset / 2 * 4) = buffer;
+
+                char_pos_x += 1;
+                if (char_pos_x >= LINE_WIDTH) {
+                    char_pos_x = 0;
+                    char_pos_y += 1;
+                    if (char_pos_y >= LINE_HEIGHT) {
+                        char_pos_y = 0;
+                    }
+                }
+                break;
+            }
         }
     }
-
-    printf("Start VGA\r\n");
-    *reg8(VGA_REG_BASE_ADDR, VGA_EN_OFFSET) = 1;
 
     uart_write_flush();
     return 0;
