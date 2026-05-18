@@ -128,7 +128,6 @@ module ip_vga_fetcher #(
     textbuffer_linebuf_d = textbuffer_linebuf_q;
     tb_req_idx_d = tb_req_idx_q;
     tb_vert_d = tb_vert_q;
-          textbuffer_linebuf_d[tb_req_idx_q*2+:2] = obi_tb_rsp.r.rdata;
     // NOTE: tb_req_idx is down counting, tb_req is up counting
     // font_req = textbuffer_linebuf_q[font_req_idx_q][7:0];
     obi_tb_req.a.addr[AddrWidth-1:2] = reg2hw_i.tb_addr[AddrWidth-1:2] + tb_vert_q * (vga_line_width/2) 
@@ -141,6 +140,7 @@ module ip_vga_fetcher #(
           // receive response and set new request addr
           if (tb_valid) begin
             // tb_rsp contains 2 char code for textbuffer_linebuf
+            {textbuffer_linebuf_d[tb_req_idx_q*2], textbuffer_linebuf_d[tb_req_idx_q*2+1]} = obi_tb_rsp.r.rdata;
             obi_tb_req.req = '0;
             // when finished prefetching line
             if (tb_req_idx_q == 0) begin
