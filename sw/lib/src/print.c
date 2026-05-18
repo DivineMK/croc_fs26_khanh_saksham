@@ -63,26 +63,29 @@ void printf(const char *fmt, ...) {
     while (*fmt) {
         if (*fmt == '%') {
             fmt++;
-            if (*fmt == 'x') { // hex
-                idx = format_hex32(buffer, va_arg(args, unsigned int));
-                // print from buffer
-                for (int j = idx - 1; j >= 0; j--) {
-                    putchar(buffer[j]);
-                }
-            } else if (*fmt == 'd') { // dec
-                idx = format_dec32(buffer, va_arg(args, int));
-                // print from buffer
-                for (int j = idx - 1; j >= 0; j--) {
-                    putchar(buffer[j]);
-                }
-            } else if (*fmt == 'c') { // char
-                char chr = (char)va_arg(args, int);
-                putchar(chr);
-            } else if (*fmt == 's') { // string
+            switch (*fmt) {
+            // case 'x': // hex
+            //     idx = format_hex32(buffer, va_arg(args, unsigned int));
+            //     for (int j = idx - 1; j >= 0; j--) {
+            //         putchar(buffer[j]);
+            //     }
+            //     break;
+            // case 'd': // dec
+            //     idx = format_dec32(buffer, va_arg(args, int));
+            //     for (int j = idx - 1; j >= 0; j--) {
+            //         putchar(buffer[j]);
+            //     }
+            //     break;
+            case 'c': // char
+                putchar((char)va_arg(args, int));
+                break;
+            case 's': // string
                 char *str = va_arg(args, char *);
                 while (*str) {
                     putchar(*str++);
                 }
+                break;
+            default:
             }
         } else {
             putchar(*fmt);
