@@ -2,3 +2,5 @@ build
 out
 *.log
 *.jou
+*.ltx
+*.bit
