@@ -12,13 +12,14 @@ module ip_vga_timing_fsm #(
     parameter int unsigned GreenWidth  = 6,
     parameter int unsigned BlueWidth   = 5,
     parameter int unsigned HCountWidth = 32,
-    parameter int unsigned VCountWidth = 32
+    parameter int unsigned VCountWidth = 32,
+    parameter type ip_vga_reg2hw_t = logic
 ) (
     input logic clk_i,
     input logic rst_ni,
 
     input logic fsm_en_i,
-    input logic vga_en_i,
+    input ip_vga_reg2hw_t reg2hw_i,
     // input axi_vga_reg_pkg::axi_vga_reg2hw_t reg2hw_i,
 
     // Data input
@@ -64,8 +65,8 @@ module ip_vga_timing_fsm #(
   assign red_o = (visible & valid_i) ? red_i : 'b0;
   assign green_o = (visible & valid_i) ? green_i : 'b0;
   assign blue_o = (visible & valid_i) ? blue_i : 'b0;
-  assign hsync_o = ControlHsyncPol ? hstate_q == SYNC : ~(hstate_q == SYNC);
-  assign vsync_o = ControlVsyncPol ? vstate_q == SYNC : ~(vstate_q == SYNC);
+  assign hsync_o = reg2hw_i.vga_hsync_pol ? hstate_q == SYNC : ~(hstate_q == SYNC);
+  assign vsync_o = reg2hw_i.vga_vsync_pol ? vstate_q == SYNC : ~(vstate_q == SYNC);
 
   assign visible = (hstate_q == VISIBLE) & (vstate_q == VISIBLE);
 
@@ -73,21 +74,21 @@ module ip_vga_timing_fsm #(
 
   // Enable FSM only if external enable is high (fsm_en_i) and enable register
   // is set too (reg2hw_i.control.q)
-  assign fsm_en = vga_en_i & fsm_en_i;
+  assign fsm_en = reg2hw_i.vga_en & fsm_en_i;
 
-  assign h_visible_size = HoriVisibleSize;
-  assign h_front_size = HoriFrontPorchSize;
-  assign h_sync_size = HoriSyncSize;
-  assign h_back_size = HoriBackPorchSize;
+  assign h_visible_size = reg2hw_i.vga_line_width * FontWidth;
+  assign h_front_size = reg2hw_i.vga_horz_front_porch;
+  assign h_sync_size = reg2hw_i.vga_horz_sync;
+  assign h_back_size = reg2hw_i.vga_horz_back_porch;
 
-  assign v_visible_size = VertVisibleSize;
-  assign v_front_size = VertFrontPorchSize;
-  assign v_sync_size = VertSyncSize;
-  assign v_back_size = VertBackPorchSize;
+  assign v_visible_size = reg2hw_i.vga_line_height * FontHeight;
+  assign v_front_size = reg2hw_i.vga_vert_front_porch;
+  assign v_sync_size = reg2hw_i.vga_vert_sync;
+  assign v_back_size = reg2hw_i.vga_vert_back_porch;
 
-  assign frame_done_o   = (vstate_q == FRONT_PORCH) & (vcounter_q == v_front_size)
+  assign frame_done_o  = (vstate_q == FRONT_PORCH) & (vcounter_q == v_front_size)
                           & (hstate_q == FRONT_PORCH) & (hcounter_q == h_front_size) & fsm_en;
-  assign vsync_start_o =  (vstate_q == SYNC) & (vcounter_q == v_sync_size) 
+  assign vsync_start_o = (vstate_q == SYNC) & (vcounter_q == v_sync_size) 
                           & (hstate_q == VISIBLE) & (hcounter_q == h_visible_size) & fsm_en;
 
   // Horizontal FSM
@@ -132,7 +133,7 @@ module ip_vga_timing_fsm #(
           hstate_d = VISIBLE;
         end
       endcase
-    end else if (!vga_en_i) begin
+    end else if (!reg2hw_i.vga_en) begin
       // Reset to beginning of FRONT_PAGE (right after visible)
       hcounter_d = h_sync_size;
       hstate_d   = FRONT_PORCH;
@@ -180,7 +181,7 @@ module ip_vga_timing_fsm #(
           vstate_d = VISIBLE;
         end
       endcase
-    end else if (!vga_en_i) begin
+    end else if (!reg2hw_i.vga_en) begin
       // Reset to beginning of FRONT_PAGE (right after visible)
       vcounter_d = v_front_size;
       vstate_d   = FRONT_PORCH;

@@ -3,18 +3,18 @@
 // SPDX-License-Identifier: SHL-0.51
 
 module ip_vga_fetcher #(
-    parameter obi_pkg::obi_cfg_t ObiCfg     = obi_pkg::ObiDefaultConfig,
-    parameter int unsigned       RedWidth   = 5,
-    parameter int unsigned       GreenWidth = 6,
-    parameter int unsigned       BlueWidth  = 5,
-    parameter type               obi_req_t  = logic,
-    parameter type               obi_rsp_t  = logic
+    parameter obi_pkg::obi_cfg_t ObiCfg          = obi_pkg::ObiDefaultConfig,
+    parameter int unsigned       RedWidth        = 5,
+    parameter int unsigned       GreenWidth      = 6,
+    parameter int unsigned       BlueWidth       = 5,
+    parameter type               obi_req_t       = logic,
+    parameter type               obi_rsp_t       = logic,
+    parameter type               ip_vga_reg2hw_t = logic
 ) (
     input logic clk_i,
     input logic rst_ni,
 
-    input logic vga_en_i,
-    input logic [ObiCfg.AddrWidth-1:0] tb_addr_i,
+    input ip_vga_reg2hw_t reg2hw_i,
     input logic timing_ready_i,
 
     // OBI Data ports
@@ -40,7 +40,7 @@ module ip_vga_fetcher #(
   assign char_horz = pixel_horz_q >> $clog2(FontWidth);
 
   // font request
-  logic [$clog2(LineCharWidth)-1:0]
+  logic [$bits(reg2hw_i.vga_line_width)-1:0]
       font_req_idx_d,
       font_req_idx_q;  // index for request from textbuffer_linebuf and write to bitmap_buffer
   logic [FontAddrWidth-1:0] font_req;
@@ -95,7 +95,7 @@ module ip_vga_fetcher #(
     pixel_horz_d = pixel_horz_q;
     pixel_vert_d = pixel_vert_q;
 
-    if (vga_en_i && timing_ready_i) begin
+    if (reg2hw_i.vga_en && timing_ready_i) begin
       pixel_horz_d = pixel_horz_q - 1;
       if (pixel_horz_q == 0) begin  // avoid using _d var to avoid adder in path
         pixel_horz_d = HoriVisibleSize - 1;
@@ -112,7 +112,7 @@ module ip_vga_fetcher #(
     textbuffer_linebuf_d = textbuffer_linebuf_q;
     tb_req_idx_d = tb_req_idx_q;
     tb_vert_d = tb_vert_q;
-    obi_tb_req.a.addr[AddrWidth-1:2] = tb_addr_i[AddrWidth-1:2] + tb_vert_q * (LineCharWidth/2) 
+    obi_tb_req.a.addr[AddrWidth-1:2] = reg2hw_i.tb_addr[AddrWidth-1:2] + tb_vert_q * (LineCharWidth/2) 
                 + (LineCharWidth/2 - 1 - tb_req_idx_q); // tb_req_idx is down counting, tb_req is up counting
     obi_tb_req.req = '0;  // default to prefetch
 
@@ -204,16 +204,16 @@ module ip_vga_fetcher #(
   assign {red_o, green_o, blue_o} = (bitmap_buffer_q[char_horz[0]][pixel_horz_q[2:0]] == 1) ? 16'hFFFF : 16'h0;
 
   always_ff @(posedge clk_i, negedge rst_ni) begin
-    if (~rst_ni || ~vga_en_i) begin
+    if (~rst_ni || ~reg2hw_i.vga_en) begin
       pixel_horz_q <= HoriVisibleSize - 1;
       pixel_vert_q <= VertVisibleSize - 1;
 
-      font_req_idx_q <= LineCharWidth - 1;
+      font_req_idx_q <= reg2hw_i.vga_line_width - 1;
       font_state_q <= FONT_IDLE;
       font_sel_q <= FontHeight - 1;
       bitmap_buffer_q <= '0;
 
-      tb_req_idx_q <= LineCharWidth / 2 - 1;
+      tb_req_idx_q <= reg2hw_i.vga_line_width / 2 - 1;
       tb_state_q <= TB_IDLE;
       tb_vert_q <= '0;
       textbuffer_linebuf_q <= '0;
