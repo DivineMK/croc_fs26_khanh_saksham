@@ -135,11 +135,30 @@ module tb_croc_soc #(
         .gpio16_io(gpio_io_tb[16]),
         .gpio17_io(gpio_io_tb[17]),
         `ifdef TARGET_VGA
-        .hsync_o       (hsync),
-        .vsync_o       (vsync),
+        `ifdef TARGET_NETLIST_OPENROAD
+        .red_o_0_      (red[0]),
+        .red_o_1_      (red[1]),
+        .red_o_2_      (red[2]),
+        .red_o_3_      (red[3]),
+        .red_o_4_      (red[4]),
+        .green_o_0_    (green[0]),
+        .green_o_1_    (green[1]),
+        .green_o_2_    (green[2]),
+        .green_o_3_    (green[3]),
+        .green_o_4_    (green[4]),
+        .green_o_5_    (green[5]),
+        .blue_o_0_     (blue[0]),
+        .blue_o_1_     (blue[1]),
+        .blue_o_2_     (blue[2]),
+        .blue_o_3_     (blue[3]),
+        .blue_o_4_     (blue[4]),
+        `else
         .red_o         (red),
         .green_o       (green),
         .blue_o        (blue),
+        `endif
+        .hsync_o       (hsync),
+        .vsync_o       (vsync),
         `endif
         .jtag_tck_i (jtag_tck  ),
         .jtag_tdi_i (jtag_tdi  ),
@@ -211,16 +230,12 @@ module tb_croc_soc #(
     i_vip.jtag_write_reg32(ClintBaseAddr, 32'h1);
 
     // halt core
-    i_vip.jtag_halt();
+    //i_vip.jtag_halt();
 
     // resume core
-    i_vip.jtag_resume();
+    //i_vip.jtag_resume();
 
 `ifndef TARGET_VGA
-    `ifdef TRACE_WAVE
-    $dumpvars(0, i_croc_soc);
-    $info("Start dump");
-    `endif
     // wait for non-zero return value (written into core status register)
     $display("@%t | [CORE] Wait for end of code...", $time);
     i_vip.jtag_wait_for_eoc(tb_data);
@@ -232,13 +247,20 @@ module tb_croc_soc #(
   end
 
 `ifdef TARGET_VGA
-`ifndef TARGET_NETLIST_OPENROAD
   initial begin
     // VGA testbench
     #(ClkPeriodSys);
+    `ifdef TARGET_NETLIST_OPENROAD
+    @(posedge i_croc_soc.\i_croc_soc/i_user/i_ip_vga/vga_en );
+    `else
     @(posedge i_croc_soc.i_user.i_ip_vga.vga_en);  // wait for first vsync
-    #(2 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
-    //#(10 * ClkPeriodSys * ClkDiv * FullRenderWidth);
+    `endif
+    `ifdef TRACE_WAVE
+    $dumpvars(0, i_croc_soc);
+    $info("Start dump");
+    `endif
+    //#(1 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
+    #(1 * ClkPeriodSys * ClkDiv * (FullRenderHeight - VertVisibleSize + FontHeight) * FullRenderWidth);
     #(50 * ClkPeriodSys);
     $info("TIMEOUT");
     $finish();
@@ -302,7 +324,11 @@ module tb_croc_soc #(
 
     wait (rst_n === 0);
     @(posedge rst_n);
+    `ifdef TARGET_NETLIST_OPENROAD
+    @(posedge i_croc_soc.\i_croc_soc/i_user/i_ip_vga/vga_en );
+    `else
     @(posedge i_croc_soc.i_user.i_ip_vga.vga_en);  // wait for first vsync
+    `endif
     @(edge vsync);  // sync capturing on first vsync
     forever begin
       // before the divided clock, capture the previous values
@@ -379,7 +405,6 @@ module tb_croc_soc #(
       end
     end
   end
-`endif
 `endif
 
   ////////////////
