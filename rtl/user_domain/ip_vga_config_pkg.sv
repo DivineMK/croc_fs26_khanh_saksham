@@ -7,8 +7,8 @@ package ip_vga_config_pkg;
   localparam int unsigned FontHeightLog = $clog2(FontHeight);
   localparam int unsigned FontDataWidth = 64;  // font word size
 
-  localparam int unsigned LineCharWidth = 80;
-  localparam int unsigned LineCharHeight = 25;
+  localparam int unsigned LineCharWidth = 80; // 1920px/8=240
+  localparam int unsigned LineCharHeight = 60; // 1200px/8=150
 
   // OBI parameters -> use ObiCfg
   // localparam int unsigned ObiDataWidth = 32;  // obi width
@@ -22,7 +22,7 @@ package ip_vga_config_pkg;
 
   localparam int unsigned HoriVisibleSize = FrameWidth;
   localparam int unsigned HoriFrontPorchSize = 32'h00000010;
-  localparam int unsigned HoriBackPorchSize = 32'h00000060;
+  localparam int unsigned HoriBackPorchSize = 32'h00000030;
   localparam int unsigned HoriSyncSize = 32'h00000060;
 
   localparam int unsigned VertVisibleSize = FrameHeight;

@@ -25,7 +25,7 @@ module ip_vga_regs import ip_vga_regs_pkg::*; #(
 
   `FF(tb_addr_q, tb_addr_d, '0, clk_i, rst_ni)
   `FF(clk_div_q, clk_div_d, 8'h2, clk_i, rst_ni)
-  `FF(vga_en_q, vga_en_d, 0, clk_i, rst_ni)
+  `FF(vga_en_q, vga_en_d, 1, clk_i, rst_ni)
 
   // OBI handling, A-phase fields needed in the R-phase
   logic                              req_q;

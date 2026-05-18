@@ -1,4 +1,4 @@
-// Copyright 2024 ETH Zurich and University of Bologna.
+// Copyright 2023 ETH Zurich and University of Bologna.
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 //
@@ -18,6 +18,7 @@
   `define USE_FAN
   `define USE_VIO
   `define USE_VGA
+  `define USE_ILA
 `endif
 
 `define ILA(__name, __signal)  \
@@ -274,5 +275,16 @@ module croc_xilinx import croc_pkg::*; #(
     .gpio_out_en_o   ( soc_gpio_out_en_o )
 
   );
+
+
+`ifdef USE_VGA
+`ifdef USE_ILA
+  `ILA(ila_vga_hsync, vga_hsync_o)
+  `ILA(ila_vga_vsync, vga_vsync_o)
+  `ILA(ila_vga_red, vga_red_o)
+  `ILA(ila_vga_green, vga_green_o)
+  `ILA(ila_vga_blue, vga_blue_o)
+`endif
+`endif
 
 endmodule
