@@ -21,6 +21,12 @@ module ip_vga_fetcher #(
     output obi_req_t obi_req_o,
     input  obi_rsp_t obi_rsp_i,
 
+    // Font SRAM write port
+    input logic        font_wr_req_i,
+    input logic [ 7:0] font_wr_addr_i,
+    input logic [63:0] font_wr_data_i,
+    input logic [ 7:0] font_wr_be_i,
+
     output logic [  RedWidth-1:0] red_o,
     output logic [GreenWidth-1:0] green_o,
     output logic [ BlueWidth-1:0] blue_o
@@ -76,14 +82,16 @@ module ip_vga_fetcher #(
 
   font_rom #(
       .FontSize(FontSize),
-      .FontWidth(FontWidth),
-      .FontHeight(FontHeight),
       .FontDataWidth(FontDataWidth)
   ) i_font (
       .clk_i,
       .rst_ni,
       .req_addr_i(font_req),
-      .rsp_data_o(font_rsp)
+      .rsp_data_o(font_rsp),
+      .wr_req_i(font_wr_req_i),
+      .wr_addr_i(font_wr_addr_i),
+      .wr_data_i(font_wr_data_i),
+      .wr_be_i(font_wr_be_i)
   );
 
   assign obi_req_o = obi_tb_req;
