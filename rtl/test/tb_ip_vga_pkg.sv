@@ -1,5 +1,4 @@
 package tb_ip_vga_pkg;
-  export ip_vga_config_pkg::*;
   import ip_vga_config_pkg::*;
 
   // testbench specific

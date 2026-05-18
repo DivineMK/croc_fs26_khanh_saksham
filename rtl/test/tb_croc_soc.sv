@@ -155,7 +155,7 @@ module tb_croc_soc #(
 
   initial begin
     // VGA testbench
-    #(50 * ClkPeriodSys);
+    #(ClkPeriodSys);
     @(posedge i_croc_soc.i_user.i_ip_vga.reg2hw.vga_en);  // wait for first vsync
     #(3 * ClkPeriodSys * ClkDiv * FullRenderHeight * FullRenderWidth);
     #(5000 * ClkPeriodSys);
@@ -223,7 +223,7 @@ module tb_croc_soc #(
 
     wait (rst_n === 0);
     @(posedge rst_n);
-    @(negedge i_croc_soc.vsync_o);  // sync capturing on first vsync
+    @(edge i_croc_soc.vsync_o);  // sync capturing on first vsync
     forever begin
       // before the divided clock, capture the previous values
       if (clk_div_counter == '0) begin
