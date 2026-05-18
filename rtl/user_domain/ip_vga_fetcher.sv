@@ -155,7 +155,7 @@ module ip_vga_fetcher #(
         TB_REQ: begin
           // issue request
           obi_tb_req.req = '1;
-          tb_state_d = TB_RSP;
+          if (obi_tb_rsp.gnt) tb_state_d = TB_RSP;
         end
 
         TB_LAST: begin
