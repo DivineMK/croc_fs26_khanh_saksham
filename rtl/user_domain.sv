@@ -127,7 +127,6 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   // User Manager MUX //
   /////////////////////
 
-  // No manager so we don't need a obi_mux module and just terminate the request properly
   ip_vga #(
     // .ObiCfg     (obi_pkg::ObiDefaultConfig),
     // .RedWidth   (RedWidth),
