@@ -14,7 +14,7 @@ set_power_activity -global -activity 0.01
 # Set known static inputs (e.g., reset) to zero activity
 set_power_activity -input_port rst_ni -activity 0
 # Load the VCD file and define the simulation scope
-read_vcd -scope tb_croc_soc ../vsim/${proj_name}.vcd
+read_vcd -scope tb_croc_soc/i_croc_soc ../vsim/${proj_name}.vcd
 # Generate the statistical power report for the typical corner
 set filename "${report_dir}/06_${proj_name}.power_vcd.rpt"
 set fileId [open $filename w]

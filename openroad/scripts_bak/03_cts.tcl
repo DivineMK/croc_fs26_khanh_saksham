@@ -34,8 +34,6 @@ load_checkpoint 02_${proj_name}.placed
 setDefaultParasitics
 set_dont_use $dont_use_cells
 
-set_max_capacitance 16.0 [get_ports {gpio* jtag_tdo_o uart_tx_o status_o unused*}]
-set_max_transition 4.0 [get_ports {gpio* jtag_tdo_o uart_tx_o status_o unused*}]
 
 utl::report "###############################################################################"
 utl::report "# Stage 03: CLOCK TREE SYNTHESIS"
@@ -55,7 +53,6 @@ utl::report "Clock Tree Synthesis"
 # ctsBuf and ctsBufRoot are set based on PDK
 clock_tree_synthesis -buf_list $ctsBuf -root_buf $ctsBufRoot \
                      -sink_clustering_enable \
-                     -sink_clustering_size 16 \
                      -repair_clock_nets
 
 # Legalize CTS cells
@@ -70,11 +67,7 @@ estimate_parasitics -placement
 set_propagated_clock [all_clocks]
 
 report_metrics "03_${proj_name}.cts_unrepaired"
-report_check_types -max_slew -max_capacitance -max_fanout -violators
 
-# Add repair slew, fanout and max cap
-utl::report "Repair design (slew, fanout, max cap)"
-repair_design -slew_margin 10 -cap_margin 10 -verbose
 # Repair all setup timing
 utl::report "Repair setup"
 repair_timing -setup -verbose
@@ -89,7 +82,6 @@ check_placement -verbose
 utl::report "Estimate parasitics"
 estimate_parasitics -placement
 
-report_check_types -max_slew -max_capacitance -max_fanout -violators
 report_cts -out_file ${report_dir}/03_${proj_name}.cts.rpt
 report_metrics "03_${proj_name}.cts"
 save_checkpoint 03_${proj_name}.cts

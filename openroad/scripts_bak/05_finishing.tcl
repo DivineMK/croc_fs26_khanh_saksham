@@ -47,6 +47,7 @@ global_connect
 
 save_checkpoint 05_${proj_name}.final
 report_image "05_${proj_name}.final" true true false true
+report_metrics "05_${proj_name}.final"
 
 utl::report "Write output files"
 write_def                      ${out_dir}/${proj_name}.def
