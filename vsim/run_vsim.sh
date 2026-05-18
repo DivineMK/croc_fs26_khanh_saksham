@@ -46,6 +46,7 @@ Options:
     --build-openroad    Compile Croc post-P&R netlist in VSIM
     --run BINARY        Run binary in VSIM
     --run-gui BINARY    Prepare running binary in VSIM, open GUI
+    --sdf               Enable SDF annotation (if available)
 
 Example:
     # Build and run RTL simulation with given binary (CLI mode)
@@ -211,12 +212,18 @@ compile_openroad() {
 }
 
 run_vsim() {
+    local SDF_ARGS=""
+    if [ "$SDF_EN" = 1 ]; then
+        SDF_ARGS="-sdftyp tb_croc_soc=../openroad/out/${PROJ_NAME}.sdf +sdf_verbose"
+        run_cmd "echo [INFO][VSIM] Loading SDF: ../openroad/out/${PROJ_NAME}.sdf"
+    fi
     run_cmd "${VSIM} \
         +binary=$1 \
         -c \
         tb_croc_soc \
         -t 1ns \
         -voptargs=+acc \
+        ${SDF_ARGS} \
         -suppress vsim-3009 \
         -suppress vsim-8683 \
         -suppress vsim-8386 \
@@ -225,12 +232,18 @@ run_vsim() {
 
 
 run_vsim_gui() {
+    local SDF_ARGS=""
+    if [ "$SDF_EN" = 1 ]; then
+        SDF_ARGS="-sdftyp tb_croc_soc=../openroad/out/${PROJ_NAME}.sdf +sdf_verbose"
+        run_cmd "echo [INFO][VSIM] Loading SDF: ../openroad/out/${PROJ_NAME}.sdf"
+    fi
     run_cmd "${VSIM} \
         +binary=$1 \
         -gui \
         tb_croc_soc \
         -t 1ns \
         -voptargs=+acc \
+        ${SDF_ARGS} \
         -suppress vsim-3009 \
         -suppress vsim-8683 \
         -suppress vsim-8386"
@@ -242,6 +255,7 @@ run_vsim_gui() {
 ####################
 
 DRYRUN=0
+SDF_EN=0
 
 # default action if no argument is given
 if [ $# -eq 0 ]; then
@@ -284,6 +298,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --build-openroad)
             compile_openroad
+            shift
+            ;;
+        --sdf)
+            SDF_EN=1
             shift
             ;;
         --run)
