@@ -74,9 +74,10 @@ module ip_vga_fetcher #(
   // text buffer (TB) request
   logic [$clog2(TBSize)-1:0]
       tb_req_idx_d, tb_req_idx_q;  // index for request from TB and write to textbuffer_linebuf
-  obi_req_t obi_tb_req;
   logic [$clog2(LineCharHeight)-1:0]
       tb_vert_q, tb_vert_d;  // coordinate for request from TB, in char unit vertically
+  logic [AddrWidth-3:0] tb_req_addr_d, tb_req_addr_q; // registered byte-address req_addr to avoid critical path on interconnect
+  obi_req_t obi_tb_req;
   // TB response
   obi_rsp_t obi_tb_rsp;
   logic tb_valid;
@@ -136,12 +137,13 @@ module ip_vga_fetcher #(
     textbuffer_linebuf_d = textbuffer_linebuf_q;
     tb_req_idx_d = tb_req_idx_q;
     tb_vert_d = tb_vert_q;
+    tb_req_addr_d = tb_req_addr_q;
     // NOTE: tb_req_idx need to be down counting because font_rd_idx is down
     // counting, but addr need to be up counting
-    obi_tb_req = '0;
-    obi_tb_req.a.addr[AddrWidth-1:2] = reg2hw_i.tb_addr[AddrWidth-1:2] + tb_vert_q * (vga_line_width/2) 
-                + (vga_line_width/2 - 1 - tb_req_idx_q);
-    obi_tb_req.req = '0;
+    obi_tb_req = 0;
+    obi_tb_req.a.addr[AddrWidth-1:2] = tb_req_addr_q;
+    //+ tb_vert_q * (vga_line_width/2) + reg2hw_i.tb_addr[AddrWidth-1:2] + (vga_line_width/2 - 1 - tb_req_idx_q);
+    obi_tb_req.req = 0;
 
     if (fsm_en) begin
       unique case (tb_state_q)
@@ -150,20 +152,21 @@ module ip_vga_fetcher #(
           if (tb_valid) begin
             // tb_rsp contains 2 char code for textbuffer_linebuf
             {textbuffer_linebuf_d[tb_req_idx_q*2], textbuffer_linebuf_d[tb_req_idx_q*2+1]} = obi_tb_rsp.r.rdata;
-            obi_tb_req.req = '0;
+            obi_tb_req.req = 0;
             // when finished prefetching line
             if (tb_req_idx_q == 0) begin
               tb_state_d = TB_LAST;
             end else begin
               tb_state_d   = TB_REQ;
               tb_req_idx_d = tb_req_idx_q - 1;
+              tb_req_addr_d = tb_req_addr_q + 1;
             end
           end
         end
 
         TB_REQ: begin
           // issue request
-          obi_tb_req.req = '1;
+          obi_tb_req.req = 1;
           if (obi_tb_rsp.gnt) tb_state_d = TB_RSP;
         end
 
@@ -173,7 +176,14 @@ module ip_vga_fetcher #(
           if (pixel_horz_q == 'd2 && pixel_vert_q[FontHeightLog-1:0] == 'd0) begin
             tb_state_d = TB_REQ;
             tb_req_idx_d = vga_line_width / 2 - 1;
-            tb_vert_d = (tb_vert_q == vga_line_height - 1) ? '0 : tb_vert_q + 1;
+            tb_vert_d = tb_vert_q + 1;
+            tb_req_addr_d = tb_req_addr_q + 1;
+            // end of frame
+            // avoid using tb_addr + vga_line_width * vga_line_height / 2
+            if (tb_vert_q == vga_line_height - 1) begin
+                tb_vert_d = '0;
+                tb_req_addr_d = reg2hw_i.tb_addr[AddrWidth-1:2];
+            end
           end else begin
             tb_state_d = TB_LAST;
             tb_req_idx_d = tb_req_idx_q;
@@ -183,7 +193,7 @@ module ip_vga_fetcher #(
         // vsim warning
         default: begin
           tb_state_d = TB_REQ;
-          obi_tb_req.req = '1;
+          obi_tb_req.req = 1;
         end
       endcase
     end
@@ -258,6 +268,7 @@ module ip_vga_fetcher #(
       tb_req_idx_q <= '0;
       tb_state_q <= TB_REQ;
       tb_vert_q <= '0;
+      tb_req_addr_q <= '0;
       textbuffer_linebuf_q <= '0;
     end else if (~fsm_en) begin
       pixel_horz_q <= vga_h_visible_size - 1;
@@ -271,6 +282,7 @@ module ip_vga_fetcher #(
       tb_req_idx_q <= vga_line_width / 2 - 1;
       tb_state_q <= TB_REQ;
       tb_vert_q <= '0;
+      tb_req_addr_q <= reg2hw_i.tb_addr[AddrWidth-1:2];
       textbuffer_linebuf_q <= '0;
     end else begin
       pixel_horz_q <= pixel_horz_d;
@@ -284,6 +296,7 @@ module ip_vga_fetcher #(
       tb_req_idx_q <= tb_req_idx_d;
       tb_state_q <= tb_state_d;
       tb_vert_q <= tb_vert_d;
+      tb_req_addr_q <= tb_req_addr_d;
       textbuffer_linebuf_q <= textbuffer_linebuf_d;
     end
   end
