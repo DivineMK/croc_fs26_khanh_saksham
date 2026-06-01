@@ -4,15 +4,6 @@
 
 // Number of CORDIC iterations
 #define CORDIC_ITERATIONS 16
-#define CORDIC_BASE_ADDR 0x30000000
-#define OUTPUT_X_OFFSET        0x00
-#define OUTPUT_Y_OFFSET        0x04
-#define STATUS_OFFSET          0x08
-#define INPUT_OFFSET           0x0C
-#define PRECISION_SFR_OFFSET   0x10
-#define MISC_SFR_OFFSET        0x14
-#define OPTYPE_SFR_OFFSET      0x18
-#define OPMODE_SFR_OFFSET      0x1C
 
 // Pre-computed arctangents: atan(2^-i) in Q15.16 format
 // Computed as: round(atan(2^-i) * 2^16)
@@ -34,16 +25,6 @@ static const int32_t atan_table[CORDIC_ITERATIONS] = {
     4,      // atan(2^-14) = 0.000061
     2       // atan(2^-15) = 0.000030
 };
-
-void hw_poll_cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out) {
-  *reg32(CORDIC_BASE_ADDR, INPUT_OFFSET) = angle;
-  while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET)) {
-    // Wait for operation to complete
-  }
-
-  *sin_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
-  *cos_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
-}
 
 void cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out) {
     int32_t x = CORDIC_K;
