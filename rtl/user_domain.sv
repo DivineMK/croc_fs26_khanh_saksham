@@ -54,12 +54,18 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   // OBI bus to your design
   sbr_obi_req_t user_design_obi_req;
   sbr_obi_rsp_t user_design_obi_rsp;
+  
+  // OBI bus to your design
+  sbr_obi_req_t user_cordic_obi_req;
+  sbr_obi_rsp_t user_cordic_obi_rsp;
 
   // Fanout into more readable signals
   assign user_error_obi_req               = all_user_sbr_obi_req[UserError];
   assign all_user_sbr_obi_rsp[UserError]  = user_error_obi_rsp;
   assign user_design_obi_req              = all_user_sbr_obi_req[UserDesign];
   assign all_user_sbr_obi_rsp[UserDesign] = user_design_obi_rsp;
+  assign user_cordic_obi_req              = all_user_sbr_obi_req[UserCordic];
+  assign all_user_sbr_obi_rsp[UserCordic] = user_cordic_obi_rsp;
 
 
   //-----------------------------------------------------------------------------------------------
@@ -106,6 +112,18 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
 //-------------------------------------------------------------------------------------------------
 // User Subordinates
 //-------------------------------------------------------------------------------------------------
+  
+  cordic #(
+    .ObiCfg      ( SbrObiCfg     ),
+    .obi_req_t   ( sbr_obi_req_t ),
+    .obi_rsp_t   ( sbr_obi_rsp_t ),
+    .drcg_enable ( 1'b0          )
+  ) i_user_cordic (
+    .clk_i,
+    .rst_ni,
+    .obi_req_i  ( user_cordic_obi_req ),
+    .obi_rsp_o  ( user_cordic_obi_rsp )
+  );
 
   ///////////////////////////////////
   // Replace this with your Design //

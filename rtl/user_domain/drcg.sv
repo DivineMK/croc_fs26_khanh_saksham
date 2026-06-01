@@ -9,12 +9,12 @@ module drcg(
 
 //Internal Signals
 logic drcg_q, drcg_d;
-logic drcg_clk;
 logic drcg_en;
 
 //Internal Signal Assignments
-assign drcg_en = (~drcg_en_i) | drcg_q | req_i | rvalid_i; // Gating enable is active when either request is active, response is valid, or the internal state is high (indicating an ongoing transaction)
-
+assign drcg_en = (~drcg_en_i) | drcg_q | req_i | rvalid_i; 
+// Gating enable is active when either request is active, response is valid, 
+// or the internal state is high (indicating an ongoing transaction)
 
 always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -37,7 +37,6 @@ always_comb begin
     end
 end
 
-//TODO: Confirm the parameter values for the clock gating cell 
 tc_clk_gating #(
   .IS_FUNCTIONAL(1'b1)
 ) i_clk_gate (
