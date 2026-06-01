@@ -20,6 +20,7 @@
  */
 void cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out);
 
+void hw_poll_cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out);
 /**
  * @brief Computes magnitude and phase of a vector using CORDIC (Vectoring Mode)
  * 
