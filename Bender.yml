@@ -39,7 +39,6 @@ sources:
     files:
       - rtl/user_domain/config_sfr_pkg.sv
       - rtl/user_domain/config_sfr.sv
-      - rtl/user_domain/control_unit.sv
       - rtl/user_domain/cordic_engine.sv
       - rtl/user_domain/drcg.sv
       - rtl/user_domain/TANtable.sv

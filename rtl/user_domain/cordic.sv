@@ -16,12 +16,11 @@ module cordic #(
   // Internal signal declarations
   config_cordic_t config_cordic;
   logic cordic_compute_done;
-  logic signed [DataWidth-1:0] cordic_x, cordic_y;  // TODO: check width
+  logic signed [DataWidth-1:0] cordic_x, cordic_y;
   logic cordic_start;
-  logic compute_start;
 
   logic [PrecisionWidth-1:0] tantable_ptr;
-  logic [DataWidth-1:0] tan_value;
+  logic [DataWidth-1:0] atan_value;
   logic drcg_clk;
 
   // Config SFR can be configured by OBI Master i.e Ibex Core to set the precision of the CORDIC algorithm.
@@ -42,16 +41,6 @@ module cordic #(
       .cordic_start_o (cordic_start)
   );
 
-  // Control Unit to manage the iterations and control flow of the CORDIC algorithm
-  control_unit #() i_control_unit (
-      .clk_i          (drcg_clk),
-      .rst_ni         (rst_ni),
-      .control_start_i(cordic_start),
-      .precision_i    (config_cordic.precision),
-      .ptr_o          (tantable_ptr),
-      .done_o         (cordic_compute_done)
-  );
-
   cordic_engine #(
       .config_cordic_t(config_cordic_t)
   ) i_cordic_engine (
@@ -59,16 +48,17 @@ module cordic #(
       .rst_ni         (rst_ni),
       .start_i        (cordic_start),
       .config_cordic_i(config_cordic),
-      .tan_i          (tan_value),
-      .ptr_i          (tantable_ptr),
+      .atan_i         (atan_value),
+      .ptr_o          (tantable_ptr),
       .cordic_x_o     (cordic_x),
-      .cordic_y_o     (cordic_y)
+      .cordic_y_o     (cordic_y),
+      .done_o         (cordic_compute_done)
   );
 
   // TAN table stores the different arctan values 
   TANtable #() i_tantable (
-      .ptr_i(tantable_ptr),
-      .tan_o(tan_value)
+      .ptr_i (tantable_ptr),
+      .atan_o(atan_value)
   );
 
   // TODO: rethink drcg logic

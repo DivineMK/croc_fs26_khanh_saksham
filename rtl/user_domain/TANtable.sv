@@ -3,31 +3,31 @@ import config_sfr_pkg::DataWidth;
 
 module TANtable #(
 ) (
-    input  logic [PrecisionWidth-1:0] ptr_i,
-    output logic [DataWidth-1:0] tan_o
+    input logic [PrecisionWidth-1:0] ptr_i,
+    output logic [DataWidth-1:0] atan_o
 );
+  logic [31:0] atan;
+  assign atan_o = atan[31:32-DataWidth];
 
-always_comb begin
-    unique case ( ptr_i )
-        0:  tan_o = 32'd51472;    // atan(2^-0) in Q1.31 format
-        1:  tan_o = 32'd30386;    // atan(2^-1) in Q1.31 format
-        2:  tan_o = 32'd16055;    // atan(2^-2) in Q1.31 format
-        3:  tan_o = 32'd8150;     // atan(2^-3) in Q1.31 format
-        4:  tan_o = 32'd4091;     // atan(2^-4) in Q1.31 format
-        5:  tan_o = 32'd2047;     // atan(2^-5) in Q1.31 format
-        6:  tan_o = 32'd1024;     // atan(2^-6) in Q1.31 format
-        7:  tan_o = 32'd512;      // atan(2^-7) in Q1.31 format
-        8:  tan_o = 32'd256;      // atan(2^-8) in Q1.31 format
-        9:  tan_o = 32'd128;      // atan(2^-9) in Q1.31 format
-        10: tan_o = 32'd64;       // atan(2^-10) in Q1.31 format
-        11: tan_o = 32'd32;       // atan(2^-11) in Q1.31 format
-        12: tan_o = 32'd16;       // atan(2^-12) in Q1.31 format
-        13: tan_o = 32'd8;        // atan(2^-13) in Q1.31 format
-        14: tan_o = 32'd4;        // atan(2^-14) in Q1.31 format
-        15: tan_o = 32'd2;        // atan(2^-15) in Q1.31 format
-        default: tan_o = 32'dx;   // Undefined for ptr_i >= MaxIterationDepth 
+  always_comb begin
+    unique case (ptr_i)
+       0: atan = 32'd536870912;  // Q0.32 format atan(2^-0) = π/4  →  2^32 / 8
+       1: atan = 32'd316933406;  // Q0.32 format atan(2^-1)
+       2: atan = 32'd167466358;  // Q0.32 format atan(2^-2)
+       3: atan = 32'd85012769;   // Q0.32 format atan(2^-3)
+       4: atan = 32'd42673528;   // Q0.32 format atan(2^-4)
+       5: atan = 32'd21354918;   // Q0.32 format atan(2^-5)
+       6: atan = 32'd10680707;   // Q0.32 format atan(2^-6)
+       7: atan = 32'd5340354;    // Q0.32 format atan(2^-7)
+       8: atan = 32'd2670177;    // Q0.32 format atan(2^-8)
+       9: atan = 32'd1335088;    // Q0.32 format atan(2^-9)
+      10: atan = 32'd667544;     // Q0.32 format atan(2^-10)
+      11: atan = 32'd333772;     // Q0.32 format atan(2^-11)
+      12: atan = 32'd166886;     // Q0.32 format atan(2^-12)
+      13: atan = 32'd83443;      // Q0.32 format atan(2^-13)
+      14: atan = 32'd41722;      // Q0.32 format atan(2^-14)
+      15: atan = 32'd20861;      // Q0.32 format atan(2^-15)
+      default: atan = 'x;
     endcase
-end
-
-
+  end
 endmodule
