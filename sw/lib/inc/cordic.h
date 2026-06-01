@@ -4,13 +4,13 @@
 #include <stdint.h>
 #include "util.h"
 
-// Using Q15.16 fixed-point format
+// Angle format: normalized where 2π = 2^32
 #define CORDIC_FRACTIONAL_BITS 16
 #define CORDIC_ONE (1 << CORDIC_FRACTIONAL_BITS)
-#define CORDIC_HALF_PI (102943) // ~ 1.570796 * 2^16
-#define CORDIC_PI (205887)      // ~ 3.141592 * 2^16
+#define CORDIC_HALF_PI ((uint32_t)0x40000000)  // π/2  →  2^30
+#define CORDIC_PI ((uint32_t)0x80000000)        // π    →  2^31
 
-#define CORDIC_K 39797          // 0.607252935 * 2^16
+#define CORDIC_K 39797          // 1/K ≈ 0.607252935 × 2^16
 
 #define CORDIC_BASE_ADDR 0x30000000
 #define OUTPUT_X_OFFSET        0x00
@@ -24,26 +24,26 @@
 /**
  * @brief Computes sine and cosine of an angle using CORDIC (Rotation Mode)
  * 
- * @param angle Angle in radians (Q15.16 fixed-point format). Must be in range [-pi/2, pi/2].
+ * @param angle Angle in normalized format (2π = 2^32).
  * @param sin_out Pointer to store the computed sine value (Q15.16 format).
  * @param cos_out Pointer to store the computed cosine value (Q15.16 format).
  */
-void cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out);
+void cordic_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out);
 
 /**
  * @brief Polls the hardware CORDIC for sine and cosine values
- * @param angle Angle in radians (Q15.16 fixed-point format). Must be in range [-pi/2, pi/2].
+ * @param angle Angle in normalized format (2π = 2^32).
  * @param sin_out Pointer to store the computed sine value (Q15.16 format).
  * @param cos_out Pointer to store the computed cosine value (Q15.16 format).
  */
-static inline __attribute__((always_inline)) void hw_poll_cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out) {
+static inline __attribute__((always_inline)) void hw_poll_cordic_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out) {
   *reg32(CORDIC_BASE_ADDR, INPUT_OFFSET) = angle;
   while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET)) {
     // Wait for operation to complete
   }
 
-  *sin_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
-  *cos_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
+  *cos_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
+  *sin_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
 }
 
 /**
@@ -52,12 +52,12 @@ static inline __attribute__((always_inline)) void hw_poll_cordic_sincos(int32_t 
  * @param x X-coordinate of the vector (Q15.16 fixed-point format). Must be > 0.
  * @param y Y-coordinate of the vector (Q15.16 fixed-point format).
  * @param mag_out Pointer to store the computed magnitude (Q15.16 format).
- * @param phase_out Pointer to store the computed phase in radians (Q15.16 format).
+ * @param phase_out Pointer to store the computed phase in normalized format (2π = 2^32).
  */
 void cordic_magphase(int32_t x, int32_t y, int32_t *mag_out, int32_t *phase_out);
 
-// Helper macros for float conversion (useful for testing)
-#define FLOAT_TO_Q16(x) ((int32_t)((x) * (1 << CORDIC_FRACTIONAL_BITS)))
-#define Q16_TO_FLOAT(x) ((float)(x) / (1 << CORDIC_FRACTIONAL_BITS))
+// Helper macros for float-to-angle conversion (useful for testing)
+#define FLOAT_TO_Q16(x) ((int32_t)(uint32_t)((x) * (1LL << 32) / 6.283185307179586))
+#define Q16_TO_FLOAT(x) ((float)((int64_t)(x) * 6.283185307179586 / (1LL << 32)))
 
 #endif // CORDIC_H

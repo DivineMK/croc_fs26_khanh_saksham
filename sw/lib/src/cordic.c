@@ -5,31 +5,30 @@
 // Number of CORDIC iterations
 #define CORDIC_ITERATIONS 16
 
-// Pre-computed arctangents: atan(2^-i) in Q15.16 format
-// Computed as: round(atan(2^-i) * 2^16)
-static const int32_t atan_table[CORDIC_ITERATIONS] = {
-    51472,  // atan(2^0) = 0.785398
-    30386,  // atan(2^-1) = 0.463647
-    16055,  // atan(2^-2) = 0.244978
-    8150,   // atan(2^-3) = 0.124354
-    4091,   // atan(2^-4) = 0.062418
-    2047,   // atan(2^-5) = 0.031239
-    1024,   // atan(2^-6) = 0.015623
-    512,    // atan(2^-7) = 0.007812
-    256,    // atan(2^-8) = 0.003906
-    128,    // atan(2^-9) = 0.001953
-    64,     // atan(2^-10) = 0.000976
-    32,     // atan(2^-11) = 0.000488
-    16,     // atan(2^-12) = 0.000244
-    8,      // atan(2^-13) = 0.000122
-    4,      // atan(2^-14) = 0.000061
-    2       // atan(2^-15) = 0.000030
+// Pre-computed arctangents: atan(2^-i) in normalized format (2π = 2^32)
+static const uint32_t atan_table[CORDIC_ITERATIONS] = {
+    536870912,  // atan(2^0) = π/4  →  2^32 / 8
+    316933406,  // atan(2^-1)
+    167466358,  // atan(2^-2)
+    85012769,   // atan(2^-3)
+    42673528,   // atan(2^-4)
+    21354918,   // atan(2^-5)
+    10680707,   // atan(2^-6)
+    5340354,    // atan(2^-7)
+    2670177,    // atan(2^-8)
+    1335088,    // atan(2^-9)
+    667544,     // atan(2^-10)
+    333772,     // atan(2^-11)
+    166886,     // atan(2^-12)
+    83443,      // atan(2^-13)
+    41722,      // atan(2^-14)
+    20861       // atan(2^-15)
 };
 
-void cordic_sincos(int32_t angle, int32_t *sin_out, int32_t *cos_out) {
+void cordic_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out) {
     int32_t x = CORDIC_K;
     int32_t y = 0;
-    int32_t z = angle;
+    uint32_t z = angle;
 
     for (int i = 0; i < CORDIC_ITERATIONS; ++i) {
         int32_t x_temp = x;

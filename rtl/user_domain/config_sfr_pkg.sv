@@ -6,6 +6,7 @@ package config_sfr_pkg;
   parameter unsigned OpModeFieldBitWidth = 2;
   parameter unsigned CordicInputBitWidth = 32;
   parameter unsigned MaxIterationDepth = 16;
+  parameter unsigned Precision = MaxIterationDepth;
 
   parameter unsigned DataWidth = 32;
   //Derived parameters
@@ -44,13 +45,13 @@ package config_sfr_pkg;
   // Value of the angle stored
 
   // TODO: determine order for synthesizing better selection logic
-  parameter logic [IntAddrWidth-1:0] OUTPUT_X_OFFSET      = 5'h00;  // output read-only
-  parameter logic [IntAddrWidth-1:0] OUTPUT_Y_OFFSET      = 5'h04;  // output read-only
-  parameter logic [IntAddrWidth-1:0] STATUS_OFFSET        = 5'h08;  // control status
-  parameter logic [IntAddrWidth-1:0] INPUT_OFFSET         = 5'h0C;
+  parameter logic [IntAddrWidth-1:0] OUTPUT_X_OFFSET = 5'h00;  // output read-only
+  parameter logic [IntAddrWidth-1:0] OUTPUT_Y_OFFSET = 5'h04;  // output read-only
+  parameter logic [IntAddrWidth-1:0] STATUS_OFFSET = 5'h08;  // control status
+  parameter logic [IntAddrWidth-1:0] INPUT_OFFSET = 5'h0C;
   parameter logic [IntAddrWidth-1:0] PRECISION_SFR_OFFSET = 5'h10;
-  parameter logic [IntAddrWidth-1:0] MISC_SFR_OFFSET      = 5'h14;  // [0]: drcg
-  parameter logic [IntAddrWidth-1:0] OPTYPE_SFR_OFFSET    = 5'h18;
-  parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET    = 5'h1C;
+  parameter logic [IntAddrWidth-1:0] MISC_SFR_OFFSET = 5'h14;  // [0]: drcg
+  parameter logic [IntAddrWidth-1:0] OPTYPE_SFR_OFFSET = 5'h18;
+  parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET = 5'h1C;
 
 endpackage

@@ -17,6 +17,9 @@ int main(void) {
     // Test 1: Sincos of pi/4 (0.785398)
     // 0.785398 * 65536 = 51471.8 => 51472
     int32_t angle = 51472;
+    // Test 1: Sincos of 3pi/4
+    // 2^32 * 3 / 8
+    uint32_t angle = (0b11 << 29);
     int32_t sin_val, cos_val;
     int32_t hw_sin_val, hw_cos_val;
     
@@ -40,6 +43,7 @@ int main(void) {
     int32_t hw_cos_err = (ABS(hw_cos_val - expected_cos) * 100000) / ABS(expected_cos);
 
     printf("Angle: %d (Q16 for pi/4)\n", angle);
+    printf("Angle: %d (normalized)\n", angle);
     // printf("Software CORDIC Sin: %d (Expected: %d, RelErr: %d / 100000)\n", sin_val, expected_sin, sin_err);
     // printf("Software CORDIC Cos: %d (Expected: %d, RelErr: %d / 100000)\n", cos_val, expected_cos, cos_err);
     printf("Hardware CORDIC Sin: %d (Expected: %d, RelErr: %d / 100000)\n", hw_sin_val, expected_sin, hw_sin_err);
@@ -59,6 +63,7 @@ int main(void) {
     //
     // int32_t expected_mag = 92681; // ~1.4142 * 65536
     // int32_t expected_phase = 51472; // ~0.785398 * 65536
+    // int32_t expected_phase = 536870912; // pi/4 in normalized format
     //
     // int32_t mag_err = (ABS(mag - expected_mag) * 100000) / ABS(expected_mag);
     // int32_t phase_err = (ABS(phase - expected_phase) * 100000) / ABS(expected_phase);

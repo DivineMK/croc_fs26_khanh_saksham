@@ -8,8 +8,7 @@
 `include "common_cells/registers.svh"
 
 import config_sfr_pkg::*;
-module config_sfr
-#(
+module config_sfr #(
     parameter type obi_req_t = logic,
     parameter type obi_rsp_t = logic,
     parameter type config_cordic_t = logic
@@ -42,8 +41,8 @@ module config_sfr
   `FF(optype_q, optype_d, '0, clk_i, rst_ni)
   `FF(opmode_q, opmode_d, '0, clk_i, rst_ni)
   `FF(cordic_inp_q, cordic_inp_d, '0, clk_i, rst_ni)
-  `FF(cordic_oup_x_q,      cordic_oup_x_d, '0, clk_i, rst_ni)
-  `FF(cordic_oup_y_q,      cordic_oup_y_d, '0, clk_i, rst_ni)
+  `FF(cordic_oup_x_q, cordic_oup_x_d, '0, clk_i, rst_ni)
+  `FF(cordic_oup_y_q, cordic_oup_y_d, '0, clk_i, rst_ni)
 
   // OBI A-phase fields latched for the R-phase
   logic                              req_q;
@@ -75,18 +74,18 @@ module config_sfr
   assign config_cordic_o.precision = precision_q;
   assign config_cordic_o.optype = optype_q;
   assign config_cordic_o.opmode = opmode_q;
-  assign config_cordic_o.cordic_inp = cordic_inp_d; // save 1 cycle over using _q
+  assign config_cordic_o.cordic_inp = cordic_inp_d;  // save 1 cycle over using _q
   assign config_cordic_o.drcg_en = misc_q[0];
   assign cordic_start_o = (status_q == 1);
 
   // Address phase: update writable registers
   always_comb begin : write_fsm
-    precision_d  = precision_q;
-    misc_d       = misc_q;
-    optype_d     = optype_q;
-    opmode_d     = opmode_q;
-    cordic_inp_d = cordic_inp_q;
-    status_d     = status_q;
+    precision_d    = precision_q;
+    misc_d         = misc_q;
+    optype_d       = optype_q;
+    opmode_d       = opmode_q;
+    cordic_inp_d   = cordic_inp_q;
+    status_d       = status_q;
     cordic_oup_x_d = cordic_oup_x_q;
     cordic_oup_y_d = cordic_oup_y_q;
 
