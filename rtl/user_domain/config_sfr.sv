@@ -75,7 +75,7 @@ module config_sfr
   assign config_cordic_o.precision = precision_q;
   assign config_cordic_o.optype = optype_q;
   assign config_cordic_o.opmode = opmode_q;
-  assign config_cordic_o.cordic_inp = cordic_inp_q;
+  assign config_cordic_o.cordic_inp = cordic_inp_d; // save 1 cycle over using _q
   assign config_cordic_o.drcg_en = misc_q[0];
   assign cordic_start_o = (status_q == 1);
 

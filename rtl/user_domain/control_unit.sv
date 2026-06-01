@@ -9,7 +9,6 @@ module control_unit #(
     input logic control_start_i,
     input logic [PrecisionWidth-1:0] precision_i,
     // input logic ready_i,
-    output logic compute_start_o,
     output logic done_o,
     output logic [PrecisionWidth-1:0] ptr_o
 );
@@ -37,6 +36,7 @@ module control_unit #(
       SYSTEM_IDLE: begin
         iteration_d = 'd0;
         if (control_start_i) begin
+          iteration_d = 'd1;
           state_d = COMPUTE_START;
         end
       end
@@ -65,6 +65,5 @@ module control_unit #(
   // Output Assignments
   assign ptr_o = iteration_q;
   assign done_o = (state_q == COMPUTE_DONE);
-  assign compute_start_o = (state_q == COMPUTE_START);
 
 endmodule

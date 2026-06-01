@@ -48,7 +48,6 @@ module cordic #(
       .rst_ni         (rst_ni),
       .control_start_i(cordic_start),
       .precision_i    (config_cordic.precision),
-      .compute_start_o(compute_start),
       .ptr_o          (tantable_ptr),
       .done_o         (cordic_compute_done)
   );
@@ -58,7 +57,7 @@ module cordic #(
   ) i_cordic_engine (
       .clk_i          (drcg_clk),
       .rst_ni         (rst_ni),
-      .start_i        (compute_start),
+      .start_i        (cordic_start),
       .config_cordic_i(config_cordic),
       .tan_i          (tan_value),
       .ptr_i          (tantable_ptr),
