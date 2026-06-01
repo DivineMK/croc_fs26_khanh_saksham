@@ -36,11 +36,13 @@ Options:
     --flist             Regenerate flist (croc.f)
     --build             Build croc_soc Verilator binary
     --run BINARY        Run binary in Verilator
+    BENDER_FLAGS        Env var for more Bender flags (only when generating flist)
 
 Example:
     # Build and run RTL simulation with given binary
     ./run_verilator.sh --build --run ../sw/bin/helloworld.hex
-
+    # Build RTL simulation with custom bender flags
+    BENDER_FLAGS="-t cordic" ./run_verilator.sh --flist --build
 EOF
     exit 0
 }
@@ -77,9 +79,6 @@ build_verilator() {
         --x-assign fast \
         --x-initial fast \
         -O3 \
-        --top tb_croc_soc \
-        -f croc.f 2>&1 | \
-        tee ${PROJ_NAME}_build.log"
         --top tb_${DUT_DESIGN} \
         -f ${PROJ_NAME}.f 2>&1 | \
         tee ${DUT_DESIGN}_build.log"
@@ -89,7 +88,7 @@ build_verilator() {
 generate_flist() {
     run_cmd "echo [INFO][Bender] Generate croc.f"
     run_cmd "bender \
-        script flist-plus \
+        script flist-plus ${BENDER_FLAGS:-}\
         -t rtl \
         -t verilator \
         -t synthesis \
