@@ -1,179 +1,194 @@
-module config_sfr #(
-    parameter SfrAddrWidth = 3,
-    parameter SfrDataWidth = 32,
-    parameter OpTypeFieldBitWidth = 4,
-    parameter OpModeFieldBitWidth = 2,
-    parameter OpAngleFieldBitWidth = 16,
-    parameter MaxIterationDepth = 16,
-    parameter CordicBaseAddress = 32'h2000_1000,
+// Copyright 2025 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+//
+// Authors:
+// - Enrico Zelioli <ezelioli@iis.ee.ethz.ch>
 
-    //Derived parameters
-    MaxIterationDepthBitWidth = $clog2(MaxIterationDepth)
+`include "common_cells/registers.svh"
+
+import config_sfr_pkg::*;
+module config_sfr
+#(
+    parameter type obi_req_t = logic,
+    parameter type obi_rsp_t = logic,
+    parameter type config_cordic_t = logic
 ) (
-    input  logic                                  clk_i,
-    input  logic                                  rst_ni,
-    input  logic [SfrAddrWidth-1:0]               sfr_addr_i,
-    input  logic [SfrDataWidth-1:0]               sfr_data_i,
-    input  logic                                  sfr_we_i,
-    input  logic                                  sfr_upd_i, // Signal to indicate when to update the SFR value
-    output logic [OpTypeFieldBitWidth-1:0]        optype_o,
-    output logic [OpModeFieldBitWidth-1:0]        opmode_o,
-    output logic [OpAngleFieldBitWidth-1:0]       opangle_o,
-    output logic [MaxIterationDepthBitWidth-1:0]  precision_o,
-    output logic                                  drcg_en_o,
-    output logic [SfrDataWidth-1:0]               sfr_data_o,
-    output logic                                  opsfr_access_valid_o,
-    output logic                                  sfraccess_valid_o
+    input logic clk_i,
+    input logic rst_ni,
+
+    input  obi_req_t obi_req_i,
+    output obi_rsp_t obi_rsp_o,
+
+    input  logic signed    [SfrDataWidth-1:0] cordic_oup_x_i,
+    input  logic signed    [SfrDataWidth-1:0] cordic_oup_y_i,
+    input  logic                              cordic_done_i,
+    output config_cordic_t                    config_cordic_o,
+    output logic                              cordic_start_o
 );
 
-//Internal signal declarations
-logic [SfrDataWidth-1:0] sfr_rdata_q, sfr_rdata_d;
-logic [SfrDataWidth-1:0] sfr_prec_data_q, sfr_prec_data_d;
-logic [SfrDataWidth-1:0] sfr_misc_data_q, sfr_misc_data_d;
-logic [SfrDataWidth-1:0] sfr_op_data_q, sfr_op_data_d;
-logic sfraccess_valid;
+  // Read-write registers
+  logic [PrecisionWidth-1:0] precision_d, precision_q;
+  logic [SfrDataWidth-1:0] misc_d, misc_q;
+  logic [OpTypeFieldBitWidth-1:0] optype_d, optype_q;
+  logic [OpModeFieldBitWidth-1:0] opmode_d, opmode_q;
+  logic [CordicInputBitWidth-1:0] cordic_inp_d, cordic_inp_q;
+  logic [SfrDataWidth-1:0] cordic_oup_x_q, cordic_oup_x_d;
+  logic [SfrDataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
+  logic status_q, status_d;
 
+  `FF(precision_q, precision_d, 4'd15, clk_i, rst_ni)
+  `FF(misc_q, misc_d, '0, clk_i, rst_ni)
+  `FF(optype_q, optype_d, '0, clk_i, rst_ni)
+  `FF(opmode_q, opmode_d, '0, clk_i, rst_ni)
+  `FF(cordic_inp_q, cordic_inp_d, '0, clk_i, rst_ni)
+  `FF(cordic_oup_x_q,      cordic_oup_x_d, '0, clk_i, rst_ni)
+  `FF(cordic_oup_y_q,      cordic_oup_y_d, '0, clk_i, rst_ni)
 
+  // OBI A-phase fields latched for the R-phase
+  logic                              req_q;
+  logic                              we_q;
+  logic [$bits(obi_req_i.a.aid)-1:0] id_q;
+  logic [          IntAddrWidth-1:2] addr_q;
 
-//Local parameters and type declarations
-localparam AddrOffset = $clog2(SfrDataWidth/8) + 1;
+  `FF(req_q, obi_req_i.req, '0, clk_i, rst_ni)
+  `FF(we_q, obi_req_i.a.we, '0, clk_i, rst_ni)
+  `FF(id_q, obi_req_i.a.aid, '0, clk_i, rst_ni)
+  // TODO: whether full addr need to be checked or just LSBs
+  `FF(addr_q, obi_req_i.a.addr[IntAddrWidth-1:2], '0, clk_i, rst_ni)
+  // replace start logic from control unit -> remove PRESTART
+  `FF(status_q, status_d, '0, clk_i, rst_ni)
 
+  // Byte-enable mask: expands each BE bit to a full byte for masked writes
+  logic [SfrDataWidth-1:0] be_mask;
+  for (genvar i = 0; unsigned'(i) < SfrDataWidth / 8; ++i) begin : gen_write_mask
+    assign be_mask[8*i+:8] = {8{obi_req_i.a.be[i]}};
+  end
 
-//SFR Addresses
-localparam PrecisionSfrAddrOffset = 32'h0;
-localparam MiscSfrAddrOffset = 32'h4;
-localparam OperationSfrAddrOffset = 32'h8;
-localparam PRECISION_SFR_ADDR = CordicBaseAddress + PrecisionSfrAddrOffset; // SFR for configuration
-localparam MISC_SFR_ADDR = CordicBaseAddress + MiscSfrAddrOffset; // SFR for miscellaneous functions
-localparam OPERATION_SFR_ADDR = CordicBaseAddress + OperationSfrAddrOffset; // SFR for deciding which trigonometric function to compute
+  // Access-valid flags (combinational from request-phase address)
+  // assign sfraccess_valid_o    = (obi_req_i.a.addr[IntAddrWidth-1:2] == PRECISION_SFR_OFFSET)
+  //                            || (obi_req_i.a.addr[IntAddrWidth-1:2] == MISC_SFR_OFFSET)
+  //                            || (obi_req_i.a.addr[IntAddrWidth-1:2] == OPERATION_SFR_OFFSET);
+  // assign opsfr_access_valid_o = (obi_req_i.a.addr[IntAddrWidth-1:2] == OPERATION_SFR_OFFSET);
 
+  // Output to hardware
+  assign config_cordic_o.precision = precision_q;
+  assign config_cordic_o.optype = optype_q;
+  assign config_cordic_o.opmode = opmode_q;
+  assign config_cordic_o.cordic_inp = cordic_inp_q;
+  assign config_cordic_o.drcg_en = misc_q[0];
+  assign cordic_start_o = (status_q == 1);
 
-//Internal Signal Definitions
-assign sfraccess_valid = (sfr_addr_i == PRECISION_SFR_ADDR) || (sfr_addr_i == MISC_SFR_ADDR) || (sfr_addr_i == OPERATION_SFR_ADDR);
+  // Address phase: update writable registers
+  always_comb begin : write_fsm
+    precision_d  = precision_q;
+    misc_d       = misc_q;
+    optype_d     = optype_q;
+    opmode_d     = opmode_q;
+    cordic_inp_d = cordic_inp_q;
+    status_d     = status_q;
+    cordic_oup_x_d = cordic_oup_x_q;
+    cordic_oup_y_d = cordic_oup_y_q;
 
-
-
-always_ff @(posedge clk_i) begin
-    if(!rst_ni) begin
-        sfr_rdata_q <= 'b0;
-        sfr_prec_data_q <= 'hf;
-        sfr_op_data_q <= 'b0;
-        sfr_misc_data_q <= 'b0;
-    end else begin
-        sfr_rdata_q <= sfr_rdata_d;
-        sfr_prec_data_q <= sfr_prec_data_d;
-        sfr_op_data_q <= sfr_op_data_d;
-        sfr_misc_data_q <= sfr_misc_data_d;
+    // clear status bit when done
+    if (cordic_done_i) begin
+      status_d = 1'b0;
+      cordic_oup_x_d = cordic_oup_x_i;
+      cordic_oup_y_d = cordic_oup_y_i;
     end
-end
-
-
-
-
-//SFR Address Map
-
-//-------------- PRECISION_SFR_ADDR: --------------------
-// Maximum possible precision is determined by the parameter MaxIterationDepth of the CORDIC algorithm. 
-// We allocate MaxIterationDepthBitWidth bits in the LSB within the SfrDataWidth bits in the SFR
-// [MaxIterationDepthBitWidth-1:0] Prec Field
-// [3:0] Prec Field: 
-// 0x0: 1 iteration, 0x1: 2 iterations, 0x2: 3 iterations ... 0xf: 16 iterations (Default)
-
-
-//-------------- MISC_SFR_ADDR: --------------------
-// [0] DRCG Enable Bit: 
-// 1'b0: DRCG Disabled(Default), 1'b1: DRCG Enabled 
-
-
-
-
-//-------------- OPERATION_SFR_ADDR: ---------------
-// [1:0] OpMode Field
-// OpMode Field: We use 2 bits for deciding Rotation Mode or Vectoring Mode.
-// 0x0: Rotation Mode (Default), 0x1: Vectoring Mode
-
-// [5:2] OpType Field
-// OpType Field: Within the Rotation Mode, we use 4 bits to decide trigonometric function
-// 0x0: Sine(Default), 0x1: Cosine, 0x2: Tangent, 0x3: Cotangent, 0x4: Cosecant, 0x5: Secant
-
-// [31:15] Angle Field
-// Value of the angle stored
-
-always_comb begin : sfr_read_logic
-    sfr_rdata_d = 'b0; // Default read data value
-
-    unique case(sfr_addr_i[AddrOffset:0]) // Address decoding based on the upper bits of the address
-
-        PrecisionSfrAddrOffset: begin
-            if(!sfr_we_i & sfraccess_valid) begin
-                sfr_rdata_d = sfr_prec_data_q;
-            end
+    // TODO: determine whether to have cordic_engine store current config
+    // TODO: whether full addr need to be checked or just LSBs
+    if (obi_req_i.req && obi_req_i.a.we && !status_q) begin
+      unique case ({
+        obi_req_i.a.addr[IntAddrWidth-1:2], 2'b00
+      })
+        PRECISION_SFR_OFFSET: begin
+          precision_d = obi_req_i.a.wdata[PrecisionWidth-1:0] & be_mask[PrecisionWidth-1:0];
         end
 
-        MiscSfrAddrOffset: begin
-            if(!sfr_we_i & sfraccess_valid) begin
-                sfr_rdata_d = sfr_misc_data_q;
-            end
+        MISC_SFR_OFFSET: begin
+          misc_d = obi_req_i.a.wdata & be_mask;
         end
 
-        OperationSfrAddrOffset: begin
-            if(!sfr_we_i & sfraccess_valid) begin
-                sfr_rdata_d = sfr_op_data_q;
-            end
+        OPTYPE_SFR_OFFSET: begin
+          optype_d = obi_req_i.a.wdata[OpTypeFieldBitWidth-1:0] & be_mask[OpTypeFieldBitWidth-1:0];
         end
 
-        default: begin
-            sfr_rdata_d = 'b0; // Default case to hold the value
-        end
-    endcase
-    
-end
-
-
-always_comb begin : sfr_write_logic
-
-    // Default to hold the current values
-    sfr_prec_data_d = sfr_prec_data_q;
-    sfr_misc_data_d = sfr_misc_data_q;
-    sfr_op_data_d = sfr_op_data_q;
-
-    unique case(sfr_addr_i[AddrOffset:0]) // Address decoding based on the upper bits of the address
-
-        PrecisionSfrAddrOffset: begin
-            if(sfr_we_i & ~sfr_upd_i & sfraccess_valid) begin
-                sfr_prec_data_d = { { (SfrDataWidth - MaxIterationDepthBitWidth){1'b0} }, sfr_data_i[MaxIterationDepthBitWidth-1:0]}; 
-            end
+        OPMODE_SFR_OFFSET: begin
+          opmode_d = obi_req_i.a.wdata[OpModeFieldBitWidth-1:0] & be_mask[OpModeFieldBitWidth-1:0];
         end
 
-        MiscSfrAddrOffset: begin
-            if(sfr_we_i & ~sfr_upd_i & sfraccess_valid) begin
-                sfr_misc_data_d = { { (SfrDataWidth - 1){1'b0} }, sfr_data_i[0] };
-            end
+        INPUT_OFFSET: begin
+          cordic_inp_d = obi_req_i.a.wdata[CordicInputBitWidth-1:0] & be_mask[CordicInputBitWidth-1:0];
+          status_d = 1'b1;  // Start CORDIC computation when input is written
         end
 
-        OperationSfrAddrOffset: begin
-            if(sfr_we_i & ~sfr_upd_i & sfraccess_valid) begin
-                sfr_op_data_d = {sfr_data_i[SfrDataWidth - 1:SfrDataWidth - OpAngleFieldBitWidth], { (SfrDataWidth - OpTypeFieldBitWidth - OpModeFieldBitWidth - OpAngleFieldBitWidth){1'b0} }, sfr_data_i[OpTypeFieldBitWidth + OpModeFieldBitWidth - 1:0]};
-            end
-        end
+        default: ;
+      endcase
+    end
+  end
 
-        default: begin
-            sfr_prec_data_d = sfr_prec_data_q;
-            sfr_misc_data_d = sfr_misc_data_q;
-            sfr_op_data_d = sfr_op_data_q;
-        end
-    endcase
-    
-end
+  // Response phase: send back read data or acknowledge write
+  always_comb begin : obi_response
+    obi_rsp_o        = '0;
+    obi_rsp_o.gnt    = 1'b1;
+    obi_rsp_o.rvalid = req_q;
+    obi_rsp_o.r.rid  = id_q;
 
-//Output Assignments
-assign sfr_data_o           = sfr_rdata_q;
-assign opmode_o             = sfr_op_data_q[OpTypeFieldBitWidth + OpModeFieldBitWidth - 1:OpTypeFieldBitWidth];
-assign optype_o             = sfr_op_data_q[OpTypeFieldBitWidth-1:0];
-assign opangle_o            = sfr_op_data_q[SfrDataWidth-1:SfrDataWidth - OpAngleFieldBitWidth];
-assign precision_o          = sfr_prec_data_q[MaxIterationDepthBitWidth-1:0];
-assign drcg_en_o            = sfr_misc_data_q[0];
-assign opsfr_access_valid_o = (sfr_addr_i == OPERATION_SFR_ADDR);
-assign sfraccess_valid_o    = sfraccess_valid;
+    if (req_q) begin
+      if (!we_q) begin
+        unique case ({
+          addr_q, 2'b00
+        })
+          PRECISION_SFR_OFFSET: begin
+            obi_rsp_o.r.rdata = {{(SfrDataWidth - PrecisionWidth) {1'b0}}, precision_q};
+          end
+
+          MISC_SFR_OFFSET: begin
+            obi_rsp_o.r.rdata = misc_q;
+          end
+
+          OPTYPE_SFR_OFFSET: begin
+            obi_rsp_o.r.rdata = {{(SfrDataWidth - OpTypeFieldBitWidth) {1'b0}}, optype_q};
+          end
+
+          OPMODE_SFR_OFFSET: begin
+            obi_rsp_o.r.rdata = {{(SfrDataWidth - OpModeFieldBitWidth) {1'b0}}, opmode_q};
+          end
+
+          INPUT_OFFSET: begin
+            obi_rsp_o.r.rdata = {{(SfrDataWidth - CordicInputBitWidth) {1'b0}}, cordic_inp_q};
+          end
+
+          OUTPUT_X_OFFSET: begin
+            obi_rsp_o.r.rdata = cordic_oup_x_q;
+          end
+
+          OUTPUT_Y_OFFSET: begin
+            obi_rsp_o.r.rdata = cordic_oup_y_q;
+          end
+
+          STATUS_OFFSET: begin
+            obi_rsp_o.r.rdata = {{(SfrDataWidth - 1) {1'b0}}, status_q};
+          end
+
+          default: begin
+            obi_rsp_o.r.rdata = 32'hBADCAB1E;
+            obi_rsp_o.r.err   = 1'b1;
+          end
+        endcase
+      end else begin
+        unique case ({
+          addr_q, 2'b00
+        })
+          PRECISION_SFR_OFFSET, MISC_SFR_OFFSET, OPTYPE_SFR_OFFSET, OPMODE_SFR_OFFSET, INPUT_OFFSET:
+          ;
+          // STATUS_OFFSET and OUTPUT_OFFSET are read-only
+
+          default: obi_rsp_o.r.err = 1'b1;
+        endcase
+      end
+    end
+  end
 
 endmodule

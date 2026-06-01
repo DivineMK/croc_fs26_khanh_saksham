@@ -1,11 +1,9 @@
-module TANtable #(
-    parameter MaxIterationDepth = 16,
-    parameter DataWidth = 32,
+import config_sfr_pkg::PrecisionWidth;
+import config_sfr_pkg::DataWidth;
 
-    //Derived parameter
-    parameter PtrWidth = $clog2(MaxIterationDepth)
+module TANtable #(
 ) (
-    input  logic [PtrWidth-1:0] ptr_i,
+    input  logic [PrecisionWidth-1:0] ptr_i,
     output logic [DataWidth-1:0] tan_o
 );
 
