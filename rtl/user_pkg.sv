@@ -25,15 +25,15 @@ package user_pkg;
 
   /// Enum with user domain demultiplexer subordinate idxs
   typedef enum bit [4:0]  {
-    UserError  = 0,
-    UserDesign = 1,
+    UserError = 0,
+    UserRom = 1,
     UserCordic = 2
   } user_demux_outputs_e;
 
   /// Address rules given to user domain demultiplexer (see croc_pkg.sv for examples)
   localparam croc_pkg::addr_map_rule_t [1:0] UserAddrMap = '{
     '{
-      idx:        UserDesign,
+      idx:        UserRom,
       start_addr: croc_pkg::UserBaseAddr,
       end_addr:   croc_pkg::UserBaseAddr + 32'h1000_0000
     },
