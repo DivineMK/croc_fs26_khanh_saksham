@@ -113,9 +113,9 @@ module cordic_engine #(
   // FSM + datapath control
   `FF(state_q, state_d, IDLE, clk_i, rst_ni)
   `FF(iteration_q, iteration_d, 'd0, clk_i, rst_ni)
-  `FF(X_q, X_d, X_init, clk_i, rst_ni)
-  `FF(Y_q, Y_d, Y_init, clk_i, rst_ni)
-  `FF(Z_q, Z_d, Z_init, clk_i, rst_ni)
+  `FF(X_q, X_d, '0, clk_i, rst_ni)
+  `FF(Y_q, Y_d, '0, clk_i, rst_ni)
+  `FF(Z_q, Z_d, '0, clk_i, rst_ni)
 
   always_comb begin
     state_d    = state_q;
