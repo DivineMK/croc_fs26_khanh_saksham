@@ -90,7 +90,7 @@ if {[file exists "../technology"]} {
 	set pdk_sram_lef  ${pdk_dir}/ihp-sg13g2/libs.ref/sg13g2_sram/lef
 	set pdk_io_lib    ${pdk_dir}/ihp-sg13g2/libs.ref/sg13g2_io/lib
 	set pdk_io_lef    ${pdk_dir}/ihp-sg13g2/libs.ref/sg13g2_io/lef
-  set pdk_pad_lef   ${pdk_dir}/bondpad/lef
+  set pdk_pad_lef   ../ihp13/bondpad/lef
   # LIB
   define_corners tt ff
   
