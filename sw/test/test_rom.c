@@ -8,7 +8,7 @@ int main(void) {
     uart_init();
     char buffer[ROM_MAX_SIZE];
 
-    uint32_t *rom = reg32(USER_ROM_BASE_ADDR, 0);
+    volatile uint32_t *rom = reg32(USER_ROM_BASE_ADDR, 0);
     int i         = 0;
     while (i < ROM_MAX_SIZE) {
         buffer[i] = (char)rom[i];
