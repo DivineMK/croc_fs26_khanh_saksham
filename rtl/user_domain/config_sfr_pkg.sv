@@ -50,17 +50,16 @@ package config_sfr_pkg;
   parameter logic [IntAddrWidth-1:0] OUTPUT_X_OFFSET = 6'h00;
   parameter logic [IntAddrWidth-1:0] OUTPUT_Y_OFFSET = 6'h04;
   parameter logic [IntAddrWidth-1:0] OUTPUT_ANGLE_OFFSET = 6'h08;  // Z output (vectoring mode angle)
-  //-------------- Status / Control --------------------
-  parameter logic [IntAddrWidth-1:0] STATUS_OFFSET = 6'h0C;
-  //-------------- Inputs (write-only) --------------------
-  parameter logic [IntAddrWidth-1:0] INPUT_ANGLE_OFFSET = 6'h10;  // Angle input for sincos/rotate
+  parameter logic [IntAddrWidth-1:0] STATUS_OFFSET = 6'h0C;  // status bit: 1=done
+  //-------------- Inputs (read-write) --------------------
+  parameter logic [IntAddrWidth-1:0] INPUT_ANGLE_OFFSET = 6'h10;  // Angle input
+  parameter logic [IntAddrWidth-1:0] INPUT_X_OFFSET = 6'h14;
+  parameter logic [IntAddrWidth-1:0] INPUT_Y_OFFSET = 6'h18;
   //-------------- Config (read-write) --------------------
-  parameter logic [IntAddrWidth-1:0] PRECISION_SFR_OFFSET = 6'h14;
-  parameter logic [IntAddrWidth-1:0] MISC_SFR_OFFSET = 6'h18;
-  parameter logic [IntAddrWidth-1:0] OPTYPE_SFR_OFFSET = 6'h1C;
-  parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET = 6'h20;
-  parameter logic [IntAddrWidth-1:0] INPUT_X_OFFSET = 6'h24;
-  parameter logic [IntAddrWidth-1:0] INPUT_Y_OFFSET = 6'h28;
+  parameter logic [IntAddrWidth-1:0] PRECISION_SFR_OFFSET = 6'h1C;
+  parameter logic [IntAddrWidth-1:0] MISC_SFR_OFFSET = 6'h20;
+  parameter logic [IntAddrWidth-1:0] OPTYPE_SFR_OFFSET = 6'h24;
+  parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET = 6'h28;
   parameter logic [IntAddrWidth-1:0] DRCG_SFR_OFFSET = 6'h2C;
 
 endpackage
