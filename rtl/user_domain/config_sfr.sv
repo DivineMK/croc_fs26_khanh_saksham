@@ -19,22 +19,24 @@ module config_sfr #(
     input  obi_req_t obi_req_i,
     output obi_rsp_t obi_rsp_o,
 
-    input  logic signed    [SfrDataWidth-1:0] cordic_oup_x_i,
-    input  logic signed    [SfrDataWidth-1:0] cordic_oup_y_i,
-    input  logic                              cordic_done_i,
-    output config_cordic_t                    config_cordic_o,
-    output logic                              cordic_start_o,
-    output logic                              irq_o
+    input  logic signed    [DataWidth-1:0] cordic_oup_x_i,
+    input  logic signed    [DataWidth-1:0] cordic_oup_y_i,
+    input  logic                           cordic_done_i,
+    output config_cordic_t                 config_cordic_o,
+    output logic                           cordic_start_o,
+    output logic                           irq_o
 );
 
   // Read-write registers
   logic [PrecisionWidth-1:0] precision_d, precision_q;
-  logic [SfrDataWidth-1:0] misc_d, misc_q;
+  logic [DataWidth-1:0] misc_d, misc_q;
   logic [OpTypeFieldBitWidth-1:0] optype_d, optype_q;
   logic [OpModeFieldBitWidth-1:0] opmode_d, opmode_q;
-  logic [CordicInputBitWidth-1:0] cordic_inp_d, cordic_inp_q;
-  logic signed [SfrDataWidth-1:0] cordic_oup_x_q, cordic_oup_x_d;
-  logic signed [SfrDataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
+  logic [DataWidth-1:0] cordic_a_inp_d, cordic_a_inp_q;
+  logic signed [DataWidth-1:0] cordic_x_inp_d, cordic_x_inp_q;
+  logic signed [DataWidth-1:0] cordic_y_inp_d, cordic_y_inp_q;
+  logic signed [DataWidth-1:0] cordic_oup_x_q, cordic_oup_x_d;
+  logic signed [DataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
   logic status_q, status_d;
   logic irq_d, irq_q;
 
@@ -42,7 +44,9 @@ module config_sfr #(
   `FF(misc_q, misc_d, '0, clk_i, rst_ni)
   `FF(optype_q, optype_d, '0, clk_i, rst_ni)
   `FF(opmode_q, opmode_d, '0, clk_i, rst_ni)
-  `FF(cordic_inp_q, cordic_inp_d, '0, clk_i, rst_ni)
+  `FF(cordic_a_inp_q, cordic_a_inp_d, '0, clk_i, rst_ni)
+  `FF(cordic_x_inp_q, cordic_x_inp_d, '0, clk_i, rst_ni)
+  `FF(cordic_y_inp_q, cordic_y_inp_d, '0, clk_i, rst_ni)
   `FF(cordic_oup_x_q, cordic_oup_x_d, '0, clk_i, rst_ni)
   `FF(cordic_oup_y_q, cordic_oup_y_d, '0, clk_i, rst_ni)
 
@@ -61,8 +65,8 @@ module config_sfr #(
   `FF(irq_q, irq_d, '0, clk_i, rst_ni)
 
   // Byte-enable mask: expands each BE bit to a full byte for masked writes
-  logic [SfrDataWidth-1:0] be_mask;
-  for (genvar i = 0; unsigned'(i) < SfrDataWidth / 8; ++i) begin : gen_write_mask
+  logic [DataWidth-1:0] be_mask;
+  for (genvar i = 0; unsigned'(i) < DataWidth / 8; ++i) begin : gen_write_mask
     assign be_mask[8*i+:8] = {8{obi_req_i.a.be[i]}};
   end
 
@@ -77,7 +81,9 @@ module config_sfr #(
   assign config_cordic_o.precision = precision_q;
   assign config_cordic_o.optype = optype_q;
   assign config_cordic_o.opmode = opmode_q;
-  assign config_cordic_o.cordic_inp = cordic_inp_d;  // save 1 cycle over using _q
+  assign config_cordic_o.cordic_a_inp = cordic_a_inp_d;  // save 1 cycle over using _q
+  assign config_cordic_o.cordic_x_inp = cordic_x_inp_d;  // combo for same-cycle availability
+  assign config_cordic_o.cordic_y_inp = cordic_y_inp_d;
   assign config_cordic_o.drcg_en = misc_q[0];
   assign cordic_start_o = (status_q == 1);
   assign irq_o = irq_q;
@@ -102,7 +108,9 @@ module config_sfr #(
     misc_d         = misc_q;
     optype_d       = optype_q;
     opmode_d       = opmode_q;
-    cordic_inp_d   = cordic_inp_q;
+    cordic_a_inp_d = cordic_a_inp_q;
+    cordic_x_inp_d = cordic_x_inp_q;
+    cordic_y_inp_d = cordic_y_inp_q;
     status_d       = status_q;
     cordic_oup_x_d = cordic_oup_x_q;
     cordic_oup_y_d = cordic_oup_y_q;
@@ -136,8 +144,16 @@ module config_sfr #(
         end
 
         INPUT_OFFSET: begin
-          cordic_inp_d = obi_req_i.a.wdata[CordicInputBitWidth-1:0] & be_mask[CordicInputBitWidth-1:0];
-          status_d = 1'b1;  // Start CORDIC computation when input is written
+          cordic_a_inp_d = obi_req_i.a.wdata[DataWidth-1:0] & be_mask[DataWidth-1:0];
+          status_d = 1'b1;  // Start CORDIC computation when input angle is written
+        end
+
+        INPUT_X_OFFSET: begin
+          cordic_x_inp_d = $signed(obi_req_i.a.wdata & be_mask);
+        end
+
+        INPUT_Y_OFFSET: begin
+          cordic_y_inp_d = $signed(obi_req_i.a.wdata & be_mask);
         end
 
         default: ;
@@ -158,7 +174,7 @@ module config_sfr #(
           addr_q, 2'b00
         })
           PRECISION_SFR_OFFSET: begin
-            obi_rsp_o.r.rdata = {{(SfrDataWidth - PrecisionWidth) {1'b0}}, precision_q};
+            obi_rsp_o.r.rdata = {{(DataWidth - PrecisionWidth) {1'b0}}, precision_q};
           end
 
           MISC_SFR_OFFSET: begin
@@ -166,15 +182,23 @@ module config_sfr #(
           end
 
           OPTYPE_SFR_OFFSET: begin
-            obi_rsp_o.r.rdata = {{(SfrDataWidth - OpTypeFieldBitWidth) {1'b0}}, optype_q};
+            obi_rsp_o.r.rdata = {{(DataWidth - OpTypeFieldBitWidth) {1'b0}}, optype_q};
           end
 
           OPMODE_SFR_OFFSET: begin
-            obi_rsp_o.r.rdata = {{(SfrDataWidth - OpModeFieldBitWidth) {1'b0}}, opmode_q};
+            obi_rsp_o.r.rdata = {{(DataWidth - OpModeFieldBitWidth) {1'b0}}, opmode_q};
           end
 
           INPUT_OFFSET: begin
-            obi_rsp_o.r.rdata = {{(SfrDataWidth - CordicInputBitWidth) {1'b0}}, cordic_inp_q};
+            obi_rsp_o.r.rdata = cordic_a_inp_q;
+          end
+
+          INPUT_X_OFFSET: begin
+            obi_rsp_o.r.rdata = cordic_x_inp_q;
+          end
+
+          INPUT_Y_OFFSET: begin
+            obi_rsp_o.r.rdata = cordic_y_inp_q;
           end
 
           OUTPUT_X_OFFSET: begin
@@ -186,7 +210,7 @@ module config_sfr #(
           end
 
           STATUS_OFFSET: begin
-            obi_rsp_o.r.rdata = {{(SfrDataWidth - 1) {1'b0}}, status_q};
+            obi_rsp_o.r.rdata = {{(DataWidth - 1) {1'b0}}, status_q};
           end
 
           default: begin
@@ -198,7 +222,8 @@ module config_sfr #(
         unique case ({
           addr_q, 2'b00
         })
-          PRECISION_SFR_OFFSET, MISC_SFR_OFFSET, OPTYPE_SFR_OFFSET, OPMODE_SFR_OFFSET, INPUT_OFFSET:
+          PRECISION_SFR_OFFSET, MISC_SFR_OFFSET, OPTYPE_SFR_OFFSET, OPMODE_SFR_OFFSET,
+          INPUT_OFFSET, INPUT_X_OFFSET, INPUT_Y_OFFSET:
           ;
           // STATUS_OFFSET and OUTPUT_OFFSET are read-only
 

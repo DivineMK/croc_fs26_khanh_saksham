@@ -27,24 +27,25 @@ module cordic_engine #(
 
   // CORDIC datapath
   logic [OpModeFieldBitWidth-1:0] opmode;
-  logic [CordicInputBitWidth-1:0] cordic_inp;
+  logic [DataWidth-1:0] cordic_a_inp;
 
   assign opmode = config_cordic_i.opmode;
-  assign cordic_inp = config_cordic_i.cordic_inp;
+  assign cordic_a_inp = config_cordic_i.cordic_a_inp;
 
   logic signed [DataWidth-1:0] X_d, X_q, X_init, X_next;
   logic signed [DataWidth-1:0] Y_d, Y_q, Y_init, Y_next;
   logic signed [DataWidth-1:0] Z_d, Z_q, Z_init, Z_next;
 
-  // Quadrant of the input angle (2π = 2^32 in Q2.30)
+  // Quadrant of the input angle (2π = 2^32)
   logic [1:0] quadrant;
-  assign quadrant = cordic_inp[31:30];
+  assign quadrant = cordic_a_inp[31:30];
 
   // 39797 = 1/K in Q15.16 format, K is the CORDIC gain correction factor
   always_comb begin : init_values
     unique case (opmode)
       2'h0: begin
-        Z_init = $signed({2'b0, cordic_inp[DataWidth-3:0]});
+        // Sincos mode: rotate unit vector by angle (gain pre-compensated)
+        Z_init = $signed({2'b0, cordic_a_inp[DataWidth-3:0]});
         unique case (quadrant)
           2'b00: begin
             X_init = 'd39797;
@@ -63,6 +64,30 @@ module cordic_engine #(
             Y_init = -'d39797;
           end
         endcase
+      end
+      2'h1: begin
+        // Vector mode: rotate (X, Y) by angle θ = quadrant×90° + Z_remainder
+        // Pre-rotate (X,Y) by quadrant×90° so CORDIC only rotates Z in [0, π/2)
+        // Output includes K_gain factor; SW post-multiplies by 1/K_gain
+        unique case (quadrant)
+          2'b00: begin
+            X_init = config_cordic_i.cordic_x_inp;
+            Y_init = config_cordic_i.cordic_y_inp;
+          end
+          2'b01: begin
+            X_init = -config_cordic_i.cordic_y_inp;
+            Y_init =  config_cordic_i.cordic_x_inp;
+          end
+          2'b10: begin
+            X_init = -config_cordic_i.cordic_x_inp;
+            Y_init = -config_cordic_i.cordic_y_inp;
+          end
+          2'b11: begin
+            X_init =  config_cordic_i.cordic_y_inp;
+            Y_init = -config_cordic_i.cordic_x_inp;
+          end
+        endcase
+        Z_init = $signed({2'b0, cordic_a_inp[DataWidth-3:0]});
       end
       default: begin
         X_init = 'd0;
