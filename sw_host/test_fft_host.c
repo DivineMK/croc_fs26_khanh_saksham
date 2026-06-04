@@ -116,14 +116,14 @@ int main(void) {
     }
     fft_float(fl_re, fl_im, 128);
 
-    // Fixed-point: fft() uses cordic_sincos internally
+    // Fixed-point: fft() uses sw_sincos internally
     int32_t fp_re[128], fp_im[128];
     for (int i = 0; i < 128; i++) {
         fp_re[i] = re[i];
         fp_im[i] = im[i];
     }
     fft(fp_re, fp_im, 128);
-    compute_errors(fp_re, fp_im, fl_re, fl_im, 128, "cordic_sincos vs double-precision:");
+    compute_errors(fp_re, fp_im, fl_re, fl_im, 128, "sw_sincos vs double-precision:");
 
     return 0;
 }

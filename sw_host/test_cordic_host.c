@@ -28,7 +28,7 @@ int main(void) {
         float ref_cos = cosf(angle_rad);
 
         int32_t sw_sin, sw_cos;
-        cordic_sincos(angles[i], &sw_sin, &sw_cos);
+        sw_sincos(angles[i], &sw_sin, &sw_cos);
 
         float err_sin = fabsf(QTOF(sw_sin) - ref_sin);
         float err_cos = fabsf(QTOF(sw_cos) - ref_cos);
@@ -43,7 +43,7 @@ int main(void) {
     {
         int32_t x = Q16_ONE, y = Q16_ONE;
         int32_t mag, phase;
-        cordic_magphase(x, y, &mag, &phase);
+        sw_magphase(x, y, &mag, &phase);
 
         float ref_mag = sqrtf(2.0f);
         float ref_phase = atan2f(1.0f, 1.0f);

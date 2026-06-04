@@ -4,7 +4,7 @@
 #define Q16_ONE 65536
 
 // (a * b) >> 16 in Q16 using only 32-bit ops (no __muldi3)
-static int32_t mul_fixed(int32_t a, int32_t b) {
+int32_t mul_fixed(int32_t a, int32_t b) {
     int32_t a_h = a >> 16;
     uint32_t a_l = (uint16_t)a;
     int32_t b_h = b >> 16;
@@ -14,7 +14,7 @@ static int32_t mul_fixed(int32_t a, int32_t b) {
 }
 
 void fft(int32_t data_re[], int32_t data_im[], unsigned int N) {
-    fft_with(data_re, data_im, N, cordic_sincos);
+    fft_with(data_re, data_im, N, sw_sincos);
 }
 
 void fft_with(int32_t data_re[], int32_t data_im[], unsigned int N, sincos_fn sincos) {
@@ -47,7 +47,7 @@ void rearrange(int32_t data_re[], int32_t data_im[], unsigned int N) {
 }
 
 void compute(int32_t data_re[], int32_t data_im[], unsigned int N) {
-    compute_with(data_re, data_im, N, cordic_sincos);
+    compute_with(data_re, data_im, N, sw_sincos);
 }
 
 void compute_with(int32_t data_re[], int32_t data_im[], unsigned int N, sincos_fn sincos) {
@@ -88,7 +88,7 @@ void compute_with(int32_t data_re[], int32_t data_im[], unsigned int N, sincos_f
 }
 
 // K-gain compensation: (x * 39797) >> 16 using only 32-bit ops (no __muldi3)
-static inline int32_t kc(int32_t x) {
+int32_t kc(int32_t x) {
     return (x >> 16) * CORDIC_K + (int32_t)(((uint32_t)(uint16_t)x * (uint32_t)CORDIC_K) >> 16);
 }
 
