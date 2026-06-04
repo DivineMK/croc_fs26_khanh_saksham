@@ -200,17 +200,18 @@ module tb_croc_soc #(
     $display("@%t | [CORE] Waking core via CLINT msip", $time);
     i_vip.jtag_write_reg32(ClintBaseAddr, 32'h1);
 
+    `ifdef TRACE_WAVE
+    $info("Start dump");
+    $dumpvars(0, i_croc_soc);
+    `endif
     // halt core
-    i_vip.jtag_halt();
+    //i_vip.jtag_halt();
 
     // resume core
-    i_vip.jtag_resume();
+    //i_vip.jtag_resume();
 
     // wait for non-zero return value (written into core status register)
     $display("@%t | [CORE] Wait for end of code...", $time);
-    `ifdef TRACE_WAVE
-    $dumpvars(0, i_croc_soc);
-    `endif
     i_vip.jtag_wait_for_eoc(tb_data);
 
     // finish simulation
