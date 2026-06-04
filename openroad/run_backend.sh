@@ -101,6 +101,7 @@ open_openroad_script() {
     run_cmd "echo [INFO][OpenROAD] Open the GUI and run $1"
     run_cmd "mkdir -p logs"
     logfile="logs/$(basename -s .tcl $1).log"
+    unset QT_QPA_PLATFORM
     run_cmd "openroad -gui $1 \
         -log $logfile \
         2>&1 | TZ=UTC gawk '{ print strftime(\"[%H:%M %Z]\"), \$0 }'"
