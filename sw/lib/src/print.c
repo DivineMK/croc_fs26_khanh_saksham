@@ -37,7 +37,7 @@ uint8_t format_dec32(char *buffer, int32_t num) {
     uint32_t unum;
     if (num < 0) {
         is_negative = 1;
-        unum = (uint32_t)-num;
+        unum        = (uint32_t)-num;
     } else {
         unum = (uint32_t)num;
     }
@@ -68,6 +68,14 @@ void printf(const char *fmt, ...) {
                 // print from buffer
                 for (int j = idx - 1; j >= 0; j--) {
                     putchar(buffer[j]);
+                }
+            } else if (*fmt == 'c') { // char
+                char chr = (char)va_arg(args, int);
+                putchar(chr);
+            } else if (*fmt == 's') { // string
+                char *str = va_arg(args, char *);
+                while (*str) {
+                    putchar(*str++);
                 }
             } else if (*fmt == 'd') { // dec
                 idx = format_dec32(buffer, va_arg(args, int));
