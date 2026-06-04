@@ -1,5 +1,4 @@
 module cordic #(
-    parameter obi_pkg::obi_cfg_t ObiCfg      = obi_pkg::ObiDefaultConfig,
     parameter type               obi_req_t   = logic,
     parameter type               obi_rsp_t   = logic,
     parameter                    drcg_enable = 1'b1
@@ -22,7 +21,7 @@ module cordic #(
 
   logic [PrecisionWidth-1:0] tantable_ptr;
   logic [DataWidth-1:0] atan_value;
-  logic drcg_clk;
+  logic drcg_clk_engine, drcg_clk_sfr;
 
   // Config SFR can be configured by OBI Master i.e Ibex Core to set the precision of the CORDIC algorithm.
   config_sfr #(
@@ -30,7 +29,7 @@ module cordic #(
       .obi_rsp_t(obi_rsp_t),
       .config_cordic_t(config_cordic_t)
   ) i_config_sfr (
-      .clk_i (drcg_clk),
+      .clk_i (drcg_clk_sfr),
       .rst_ni(rst_ni),
       .obi_req_i,
       .obi_rsp_o,
@@ -47,7 +46,7 @@ module cordic #(
   cordic_engine #(
       .config_cordic_t(config_cordic_t)
   ) i_cordic_engine (
-      .clk_i          (drcg_clk),
+      .clk_i          (drcg_clk_engine),
       .rst_ni         (rst_ni),
       .start_i        (cordic_start),
       .config_cordic_i(config_cordic),
@@ -67,17 +66,27 @@ module cordic #(
 
   // TODO: rethink drcg logic
   generate
-    if (drcg_enable) begin
-      drcg i_drcg (
+    if (drcg_enable) begin : drcg_enabled
+      drcg i_drcg_sfr (
           .clk_i     (clk_i),
           .rst_ni    (rst_ni),
-          .req_i     (obi_req_i.req),
-          .rvalid_i  (cordic_compute_done),
+          .start_i   (obi_req_i.req),
+          .done_i    (obi_rsp_o.rvalid),
           .drcg_en_i (config_cordic.drcg_en),
-          .drcg_clk_o(drcg_clk)
+          .drcg_clk_o(drcg_clk_sfr)
       );
-    end else begin
-      assign drcg_clk = clk_i;
+
+      drcg i_drcg_engine (
+          .clk_i     (clk_i),
+          .rst_ni    (rst_ni),
+          .start_i   (cordic_start),
+          .done_i    (cordic_compute_done),
+          .drcg_en_i (config_cordic.drcg_en),
+          .drcg_clk_o(drcg_clk_engine)
+      );
+    end else begin : drcg_disabled
+      assign drcg_clk_engine = clk_i;
+      assign drcg_clk_sfr    = clk_i;
     end
   endgenerate
 endmodule

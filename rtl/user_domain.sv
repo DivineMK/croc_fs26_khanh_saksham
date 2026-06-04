@@ -116,7 +116,6 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
 //-------------------------------------------------------------------------------------------------
   
   cordic #(
-    .ObiCfg      ( SbrObiCfg     ),
     .obi_req_t   ( sbr_obi_req_t ),
     .obi_rsp_t   ( sbr_obi_rsp_t ),
     .drcg_enable ( 1'b1          )
