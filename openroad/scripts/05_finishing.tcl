@@ -47,7 +47,6 @@ global_connect
 
 save_checkpoint 05_${proj_name}.final
 report_image "05_${proj_name}.final" true true false true
-report_metrics "05_${proj_name}.final"
 
 utl::report "Write output files"
 write_def                      ${out_dir}/${proj_name}.def
@@ -73,3 +72,4 @@ utl::report "#  - Verilog:     ${out_dir}/${proj_name}.v"
 utl::report "#  - LVS netlist: ${out_dir}/${proj_name}_lvs.v"
 utl::report "# Checkpoint saved to ${save_dir}/05_${proj_name}.final.zip"
 utl::report "###############################################################################"
+exit

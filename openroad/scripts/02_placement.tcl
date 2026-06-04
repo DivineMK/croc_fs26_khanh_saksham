@@ -54,6 +54,28 @@ repair_tie_fanout $tieLoPin
 utl::report "Remove buffers"
 remove_buffers
 
+# Violation 1 - dtmcs_q_5_
+set_placement_padding -instances [get_cells {
+    i_croc_soc/i_croc/i_dmi_jtag/dtmcs_q_5__reg
+    i_croc_soc/i_croc/i_dmi_jtag/_1042_
+}] -left 1 -right 1
+
+# Violation 2 - dtmcs_q_6_
+set_placement_padding -instances [get_cells {
+    i_croc_soc/i_croc/i_dmi_jtag/dtmcs_q_6__reg
+    i_croc_soc/i_croc/i_dmi_jtag/_1044_
+}] -left 1 -right 1
+
+# Violation 3? - i_croc_soc/i_croc/i_dmi_jtag/i_dmi_cdc.i_cdc_resp/i_cdc_reset_ctrlr/i_cdc_reset_ctrlr_half_b/i_state_transition_cdc_src/async_data_o[0]_reg
+# Violation 4 - i_croc_soc/i_croc/i_dmi_jtag/i_dmi_cdc.i_cdc_resp/i_cdc_reset_ctrlr/i_cdc_reset_ctrlr_half_b/i_state_transition_cdc_src/_11_
+set_placement_padding -instances [get_cells {
+  i_croc_soc/i_croc/i_dmi_jtag/i_dmi_cdc.i_cdc_resp/i_cdc_reset_ctrlr/i_cdc_reset_ctrlr_half_b/i_state_transition_cdc_src/async_data_o[0]_reg
+  i_croc_soc/i_croc/i_dmi_jtag/i_dmi_cdc.i_cdc_resp/i_cdc_reset_ctrlr/i_cdc_reset_ctrlr_half_b/i_state_transition_cdc_src/_11_
+  i_croc_soc/i_croc/i_dmi_jtag/i_dmi_cdc.i_cdc_resp/i_cdc_reset_ctrlr/i_cdc_reset_ctrlr_half_a/i_state_transition_cdc_src/async_data_o[0]_reg
+i_croc_soc/i_croc/i_dmi_jtag/i_dmi_cdc.i_cdc_resp/i_cdc_reset_ctrlr/i_cdc_reset_ctrlr_half_a/i_state_transition_cdc_src/_11_
+}] -left 1 -right 1
+
+
 utl::report "Repair design"
 repair_design -verbose
 

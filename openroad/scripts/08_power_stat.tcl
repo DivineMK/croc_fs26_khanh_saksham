@@ -1,13 +1,13 @@
 source scripts/startup.tcl
 
 # Load the gate-level netlist
-read_verilog out/${proj_name}.v
+read_verilog out/croc.v
 # Link the design hierarchy using the top module name
-link_design ${top_design}
+link_design croc_chip
 # Load timing constraints
-read_sdc out/${proj_name}.sdc
+read_sdc out/croc.sdc
 # Load extracted parasitics
-read_spef out/${proj_name}.spef
+read_spef out/croc.spef
 # Set uniform switching activity rate for all input ports, you may also replace -input with -global
 #set_power_activity -input -activity 0.1
 set_power_activity -input -activity 0.1

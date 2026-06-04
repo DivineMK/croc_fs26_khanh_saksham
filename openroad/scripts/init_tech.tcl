@@ -64,18 +64,16 @@ set tieLoPin "TIELO/Y"
 
 # Tap cell insertion
 proc insertTapCells {} {
-  set sramHaloX          10.0
-  set sramHaloY          10.0
 	utl::report "Inserting tap cells"
 	tapcell \
     -distance            40 \
     -tapcell_master WELLTAP \
     -endcap_master  WELLTAP \
-    -halo_width_x $sramHaloX -halo_width_y $sramHaloY
+    -halo_width_x 10 -halo_width_y 10
 }
 
-set ctsBuf [ list BUFX64 BUFX48 BUFX44 BUFX32 BUFX24 BUFX16 BUFX12 ]
-set ctsBufRoot BUFX64
+set ctsBuf [ list BUFX8 BUFX6 BUFX4 BUFX3 BUFX2 BUFX1]
+set ctsBufRoot BUFX8
 
 # disallow OR from inserting these cells
 set dont_use_cells [list sg13cmos5l_IOPad* AOI31X*]

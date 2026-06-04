@@ -53,6 +53,9 @@ utl::report "Clock Tree Synthesis"
 # ctsBuf and ctsBufRoot are set based on PDK
 clock_tree_synthesis -buf_list $ctsBuf -root_buf $ctsBufRoot \
                      -sink_clustering_enable \
+                     -sink_clustering_size 4 \
+                     -sink_clustering_levels 4 \
+                     -clustering_unbalance_ratio 0.60 \
                      -repair_clock_nets
 
 # Legalize CTS cells
@@ -67,6 +70,16 @@ estimate_parasitics -placement
 set_propagated_clock [all_clocks]
 
 report_metrics "03_${proj_name}.cts_unrepaired"
+
+# Add repair slew, fanout and max cap
+utl::report "Repair design (slew, fanout, max cap)"
+repair_design -verbose
+# Workaround: repair_design in OR 26Q2-254 iterates all nets but fixes 0.
+# Manually upsize the 2 high-fanout X1 drivers (fanout 47, 69) that cause
+# all 118 internal slew violations.
+utl::report "Manual upsize of high-fanout drivers (repair_design bug workaround)"
+#replace_cell i_croc_soc/i_croc/_4168_ NOR3X2
+#replace_cell i_croc_soc/i_croc/_4694_ NOR2X4
 
 # Repair all setup timing
 utl::report "Repair setup"
