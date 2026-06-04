@@ -16,9 +16,9 @@ package config_sfr_pkg;
     logic [OpTypeFieldBitWidth-1:0] optype;  // choose between 2 outputs of CORDIC
     logic [OpModeFieldBitWidth-1:0] opmode;  // CORDIC mode: 0=sincos, 1=vector
     logic drcg_en;  // enable drcg
-    logic [DataWidth-1:0] cordic_a_inp;  // CORDIC angle input (0-2pi)
-    logic signed [DataWidth-1:0] cordic_x_inp;  // X input for vector mode
-    logic signed [DataWidth-1:0] cordic_y_inp;  // Y input for vector mode
+    logic [DataWidth-1:0] cordic_inp_z;  // CORDIC angle input (0-2pi)
+    logic signed [DataWidth-1:0] cordic_inp_x;  // X input for vector mode
+    logic signed [DataWidth-1:0] cordic_inp_y;  // Y input for vector mode
   } config_cordic_t;
 
   localparam int unsigned IntAddrWidth = SfrAddrWidth + 2;
@@ -45,18 +45,23 @@ package config_sfr_pkg;
   // [31:15] Angle Field
   // Value of the angle stored
 
-  // TODO: determine order for synthesizing better selection logic
-  parameter logic [IntAddrWidth-1:0] OUTPUT_X_OFFSET = 6'h00;  // output read-only
-  parameter logic [IntAddrWidth-1:0] OUTPUT_Y_OFFSET = 6'h04;  // output read-only
-  parameter logic [IntAddrWidth-1:0] STATUS_OFFSET = 6'h08;  // control status
-  parameter logic [IntAddrWidth-1:0] INPUT_OFFSET = 6'h0C;
-  parameter logic [IntAddrWidth-1:0] PRECISION_SFR_OFFSET = 6'h10;
-  parameter logic [IntAddrWidth-1:0] MISC_SFR_OFFSET = 6'h14;
-  parameter logic [IntAddrWidth-1:0] OPTYPE_SFR_OFFSET = 6'h18;
-  parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET = 6'h1C;
-  parameter logic [IntAddrWidth-1:0] INPUT_X_OFFSET = 6'h20;
-  parameter logic [IntAddrWidth-1:0] INPUT_Y_OFFSET = 6'h24;
-  parameter logic [IntAddrWidth-1:0] DRCG_SFR_OFFSET = 6'h28;
+  // SFR Address Map
+  //-------------- Outputs (read-only) --------------------
+  parameter logic [IntAddrWidth-1:0] OUTPUT_X_OFFSET = 6'h00;
+  parameter logic [IntAddrWidth-1:0] OUTPUT_Y_OFFSET = 6'h04;
+  parameter logic [IntAddrWidth-1:0] OUTPUT_ANGLE_OFFSET = 6'h08;  // Z output (vectoring mode angle)
+  //-------------- Status / Control --------------------
+  parameter logic [IntAddrWidth-1:0] STATUS_OFFSET = 6'h0C;
+  //-------------- Inputs (write-only) --------------------
+  parameter logic [IntAddrWidth-1:0] INPUT_ANGLE_OFFSET = 6'h10;  // Angle input for sincos/rotate
+  //-------------- Config (read-write) --------------------
+  parameter logic [IntAddrWidth-1:0] PRECISION_SFR_OFFSET = 6'h14;
+  parameter logic [IntAddrWidth-1:0] MISC_SFR_OFFSET = 6'h18;
+  parameter logic [IntAddrWidth-1:0] OPTYPE_SFR_OFFSET = 6'h1C;
+  parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET = 6'h20;
+  parameter logic [IntAddrWidth-1:0] INPUT_X_OFFSET = 6'h24;
+  parameter logic [IntAddrWidth-1:0] INPUT_Y_OFFSET = 6'h28;
+  parameter logic [IntAddrWidth-1:0] DRCG_SFR_OFFSET = 6'h2C;
 
 endpackage
 

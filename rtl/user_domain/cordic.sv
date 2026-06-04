@@ -17,7 +17,7 @@ module cordic #(
   // Internal signal declarations
   config_cordic_t config_cordic;
   logic cordic_compute_done;
-  logic signed [DataWidth-1:0] cordic_x, cordic_y;
+  logic signed [DataWidth-1:0] cordic_x, cordic_y, cordic_z;
   logic cordic_start;
 
   logic [PrecisionWidth-1:0] tantable_ptr;
@@ -37,6 +37,7 @@ module cordic #(
 
       .cordic_oup_x_i (cordic_x),
       .cordic_oup_y_i (cordic_y),
+      .cordic_oup_z_i (cordic_z),
       .cordic_done_i  (cordic_compute_done),
       .config_cordic_o(config_cordic),
       .cordic_start_o (cordic_start),
@@ -54,6 +55,7 @@ module cordic #(
       .ptr_o          (tantable_ptr),
       .cordic_x_o     (cordic_x),
       .cordic_y_o     (cordic_y),
+      .cordic_z_o     (cordic_z),
       .done_o         (cordic_compute_done)
   );
 

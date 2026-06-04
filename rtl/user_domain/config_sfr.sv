@@ -21,6 +21,7 @@ module config_sfr #(
 
     input  logic signed    [DataWidth-1:0] cordic_oup_x_i,
     input  logic signed    [DataWidth-1:0] cordic_oup_y_i,
+    input  logic signed    [DataWidth-1:0] cordic_oup_z_i,
     input  logic                           cordic_done_i,
     output config_cordic_t                 config_cordic_o,
     output logic                           cordic_start_o,
@@ -32,11 +33,12 @@ module config_sfr #(
   logic [DataWidth-1:0] misc_d, misc_q;
   logic [OpTypeFieldBitWidth-1:0] optype_d, optype_q;
   logic [OpModeFieldBitWidth-1:0] opmode_d, opmode_q;
-  logic [DataWidth-1:0] cordic_a_inp_d, cordic_a_inp_q;
-  logic signed [DataWidth-1:0] cordic_x_inp_d, cordic_x_inp_q;
-  logic signed [DataWidth-1:0] cordic_y_inp_d, cordic_y_inp_q;
+  logic [DataWidth-1:0] cordic_inp_z_d, cordic_inp_z_q;
+  logic signed [DataWidth-1:0] cordic_inp_x_d, cordic_inp_x_q;
+  logic signed [DataWidth-1:0] cordic_inp_y_d, cordic_inp_y_q;
   logic signed [DataWidth-1:0] cordic_oup_x_q, cordic_oup_x_d;
   logic signed [DataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
+  logic signed [DataWidth-1:0] cordic_oup_z_q, cordic_oup_z_d;
   logic status_q, status_d;
   logic irq_d, irq_q;
   logic drcg_d, drcg_q;
@@ -45,11 +47,12 @@ module config_sfr #(
   `FF(misc_q, misc_d, '0, clk_i, rst_ni)
   `FF(optype_q, optype_d, '0, clk_i, rst_ni)
   `FF(opmode_q, opmode_d, '0, clk_i, rst_ni)
-  `FF(cordic_a_inp_q, cordic_a_inp_d, '0, clk_i, rst_ni)
-  `FF(cordic_x_inp_q, cordic_x_inp_d, '0, clk_i, rst_ni)
-  `FF(cordic_y_inp_q, cordic_y_inp_d, '0, clk_i, rst_ni)
+  `FF(cordic_inp_z_q, cordic_inp_z_d, '0, clk_i, rst_ni)
+  `FF(cordic_inp_x_q, cordic_inp_x_d, '0, clk_i, rst_ni)
+  `FF(cordic_inp_y_q, cordic_inp_y_d, '0, clk_i, rst_ni)
   `FF(cordic_oup_x_q, cordic_oup_x_d, '0, clk_i, rst_ni)
   `FF(cordic_oup_y_q, cordic_oup_y_d, '0, clk_i, rst_ni)
+  `FF(cordic_oup_z_q, cordic_oup_z_d, '0, clk_i, rst_ni)
   `FF(drcg_q, drcg_d, '0, clk_i, rst_ni)
 
   // OBI A-phase fields latched for the R-phase
@@ -83,9 +86,9 @@ module config_sfr #(
   assign config_cordic_o.precision = precision_q;
   assign config_cordic_o.optype = optype_q;
   assign config_cordic_o.opmode = opmode_q;
-  assign config_cordic_o.cordic_a_inp = cordic_a_inp_d;  // save 1 cycle over using _q
-  assign config_cordic_o.cordic_x_inp = cordic_x_inp_d;  // combo for same-cycle availability
-  assign config_cordic_o.cordic_y_inp = cordic_y_inp_d;
+  assign config_cordic_o.cordic_inp_z = cordic_inp_z_q;
+  assign config_cordic_o.cordic_inp_x = cordic_inp_x_q;
+  assign config_cordic_o.cordic_inp_y = cordic_inp_y_q;
   assign config_cordic_o.drcg_en = drcg_q;
   assign cordic_start_o = (status_q == 1);
   assign irq_o = irq_q;
@@ -110,19 +113,21 @@ module config_sfr #(
     misc_d         = misc_q;
     optype_d       = optype_q;
     opmode_d       = opmode_q;
-    cordic_a_inp_d = cordic_a_inp_q;
-    cordic_x_inp_d = cordic_x_inp_q;
-    cordic_y_inp_d = cordic_y_inp_q;
+    cordic_inp_z_d = cordic_inp_z_q;
+    cordic_inp_x_d = cordic_inp_x_q;
+    cordic_inp_y_d = cordic_inp_y_q;
     status_d       = status_q;
     cordic_oup_x_d = cordic_oup_x_q;
     cordic_oup_y_d = cordic_oup_y_q;
+    cordic_oup_z_d = cordic_oup_z_q;
     drcg_d         = drcg_q;
 
-    // clear status bit when done; latch rotated output
+    // clear status bit when done; latch output
     if (cordic_done_i) begin
       status_d = 1'b0;
       cordic_oup_x_d = cordic_oup_x_i;
       cordic_oup_y_d = cordic_oup_y_i;
+      cordic_oup_z_d = cordic_oup_z_i;
     end
     // TODO: determine whether to have cordic_engine store current config
     // TODO: whether full addr need to be checked or just LSBs
@@ -146,17 +151,18 @@ module config_sfr #(
           opmode_d = obi_req_i.a.wdata[OpModeFieldBitWidth-1:0] & be_mask[OpModeFieldBitWidth-1:0];
         end
 
-        INPUT_OFFSET: begin
-          cordic_a_inp_d = obi_req_i.a.wdata[DataWidth-1:0] & be_mask[DataWidth-1:0];
-          status_d = 1'b1;  // Start CORDIC computation when input angle is written
+        INPUT_ANGLE_OFFSET: begin
+          cordic_inp_z_d = obi_req_i.a.wdata[DataWidth-1:0] & be_mask[DataWidth-1:0];
+          if (opmode_q != 2'h2) status_d = 1'b1;  // Start for sincos/rotate only
         end
 
         INPUT_X_OFFSET: begin
-          cordic_x_inp_d = $signed(obi_req_i.a.wdata & be_mask);
+          cordic_inp_x_d = $signed(obi_req_i.a.wdata & be_mask);
         end
 
         INPUT_Y_OFFSET: begin
-          cordic_y_inp_d = $signed(obi_req_i.a.wdata & be_mask);
+          cordic_inp_y_d = $signed(obi_req_i.a.wdata & be_mask);
+          if (opmode_q == 2'h2) status_d = 1'b1;  // Start for vectoring mode
         end
 
         DRCG_SFR_OFFSET: begin
@@ -196,24 +202,16 @@ module config_sfr #(
             obi_rsp_o.r.rdata = {{(DataWidth - OpModeFieldBitWidth) {1'b0}}, opmode_q};
           end
 
-          INPUT_OFFSET: begin
-            obi_rsp_o.r.rdata = cordic_a_inp_q;
-          end
-
-          INPUT_X_OFFSET: begin
-            obi_rsp_o.r.rdata = cordic_x_inp_q;
-          end
-
-          INPUT_Y_OFFSET: begin
-            obi_rsp_o.r.rdata = cordic_y_inp_q;
-          end
-
           OUTPUT_X_OFFSET: begin
             obi_rsp_o.r.rdata = cordic_oup_x_q;
           end
 
           OUTPUT_Y_OFFSET: begin
             obi_rsp_o.r.rdata = cordic_oup_y_q;
+          end
+
+          OUTPUT_ANGLE_OFFSET: begin
+            obi_rsp_o.r.rdata = cordic_oup_z_q;
           end
 
           STATUS_OFFSET: begin
@@ -234,10 +232,10 @@ module config_sfr #(
           addr_q, 2'b00
         })
           PRECISION_SFR_OFFSET, MISC_SFR_OFFSET, OPTYPE_SFR_OFFSET, OPMODE_SFR_OFFSET,
-          INPUT_OFFSET, INPUT_X_OFFSET, INPUT_Y_OFFSET, DRCG_SFR_OFFSET:
+          INPUT_ANGLE_OFFSET, INPUT_X_OFFSET, INPUT_Y_OFFSET, DRCG_SFR_OFFSET:
           ;
-          // STATUS_OFFSET and OUTPUT_OFFSET are read-only
 
+          // STATUS_OFFSET, OUTPUT_*_OFFSET are read-only
           default: obi_rsp_o.r.err = 1'b1;
         endcase
       end

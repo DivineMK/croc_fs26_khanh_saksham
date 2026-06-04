@@ -11,7 +11,7 @@ module TANtable #(
 
   always_comb begin
     unique case (ptr_i)
-       0: atan = 32'd536870912;  // Q0.32 format atan(2^-0) = π/4  →  2^32 / 8
+       0: atan = 32'd536870912;  // Q0.32 format atan(2^-0) = pi/4  ->  2^32 / 8
        1: atan = 32'd316933406;  // Q0.32 format atan(2^-1)
        2: atan = 32'd167466358;  // Q0.32 format atan(2^-2)
        3: atan = 32'd85012769;   // Q0.32 format atan(2^-3)
