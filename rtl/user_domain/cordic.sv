@@ -2,7 +2,7 @@ module cordic #(
     parameter obi_pkg::obi_cfg_t ObiCfg      = obi_pkg::ObiDefaultConfig,
     parameter type               obi_req_t   = logic,
     parameter type               obi_rsp_t   = logic,
-    parameter                    drcg_enable = 1'b0
+    parameter                    drcg_enable = 1'b1
 ) (
     input clk_i,
     input rst_ni,
@@ -71,7 +71,7 @@ module cordic #(
           .rst_ni    (rst_ni),
           .req_i     (obi_req_i.req),
           .rvalid_i  (cordic_compute_done),
-          .drcg_en_i (drcg_enable),
+          .drcg_en_i (config_cordic.drcg_en),
           .drcg_clk_o(drcg_clk)
       );
     end else begin

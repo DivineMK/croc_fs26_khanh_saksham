@@ -39,8 +39,9 @@ module config_sfr #(
   logic signed [DataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
   logic status_q, status_d;
   logic irq_d, irq_q;
-
-  `FF(precision_q, precision_d, 4'd15, clk_i, rst_ni)
+  logic drcg_d, drcg_q;
+  // due to clk gating, reset values are not taken unless there is negedge rst
+  `FF(precision_q, precision_d, '0, clk_i, rst_ni)
   `FF(misc_q, misc_d, '0, clk_i, rst_ni)
   `FF(optype_q, optype_d, '0, clk_i, rst_ni)
   `FF(opmode_q, opmode_d, '0, clk_i, rst_ni)
@@ -49,6 +50,7 @@ module config_sfr #(
   `FF(cordic_y_inp_q, cordic_y_inp_d, '0, clk_i, rst_ni)
   `FF(cordic_oup_x_q, cordic_oup_x_d, '0, clk_i, rst_ni)
   `FF(cordic_oup_y_q, cordic_oup_y_d, '0, clk_i, rst_ni)
+  `FF(drcg_q, drcg_d, '0, clk_i, rst_ni)
 
   // OBI A-phase fields latched for the R-phase
   logic                              req_q;
@@ -84,7 +86,7 @@ module config_sfr #(
   assign config_cordic_o.cordic_a_inp = cordic_a_inp_d;  // save 1 cycle over using _q
   assign config_cordic_o.cordic_x_inp = cordic_x_inp_d;  // combo for same-cycle availability
   assign config_cordic_o.cordic_y_inp = cordic_y_inp_d;
-  assign config_cordic_o.drcg_en = misc_q[0];
+  assign config_cordic_o.drcg_en = drcg_q;
   assign cordic_start_o = (status_q == 1);
   assign irq_o = irq_q;
 
@@ -114,8 +116,9 @@ module config_sfr #(
     status_d       = status_q;
     cordic_oup_x_d = cordic_oup_x_q;
     cordic_oup_y_d = cordic_oup_y_q;
+    drcg_d         = drcg_q;
 
-    // clear status bit when done
+    // clear status bit when done; latch rotated output
     if (cordic_done_i) begin
       status_d = 1'b0;
       cordic_oup_x_d = cordic_oup_x_i;
@@ -154,6 +157,10 @@ module config_sfr #(
 
         INPUT_Y_OFFSET: begin
           cordic_y_inp_d = $signed(obi_req_i.a.wdata & be_mask);
+        end
+
+        DRCG_SFR_OFFSET: begin
+          drcg_d = obi_req_i.a.wdata[0] & be_mask[0];
         end
 
         default: ;
@@ -213,6 +220,10 @@ module config_sfr #(
             obi_rsp_o.r.rdata = {{(DataWidth - 1) {1'b0}}, status_q};
           end
 
+          DRCG_SFR_OFFSET: begin
+            obi_rsp_o.r.rdata = {{(DataWidth - 1) {1'b0}}, drcg_q};
+          end
+
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;
@@ -223,7 +234,7 @@ module config_sfr #(
           addr_q, 2'b00
         })
           PRECISION_SFR_OFFSET, MISC_SFR_OFFSET, OPTYPE_SFR_OFFSET, OPMODE_SFR_OFFSET,
-          INPUT_OFFSET, INPUT_X_OFFSET, INPUT_Y_OFFSET:
+          INPUT_OFFSET, INPUT_X_OFFSET, INPUT_Y_OFFSET, DRCG_SFR_OFFSET:
           ;
           // STATUS_OFFSET and OUTPUT_OFFSET are read-only
 

@@ -56,5 +56,7 @@ package config_sfr_pkg;
   parameter logic [IntAddrWidth-1:0] OPMODE_SFR_OFFSET = 6'h1C;
   parameter logic [IntAddrWidth-1:0] INPUT_X_OFFSET = 6'h20;
   parameter logic [IntAddrWidth-1:0] INPUT_Y_OFFSET = 6'h24;
+  parameter logic [IntAddrWidth-1:0] DRCG_SFR_OFFSET = 6'h28;
 
 endpackage
+
