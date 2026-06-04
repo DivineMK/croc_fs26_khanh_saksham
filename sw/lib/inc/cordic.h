@@ -48,28 +48,25 @@ static const uint32_t atan_table[CORDIC_ITERATIONS] = {
 // 0x0 = 1 iteration, 0xF = 16 iterations (default)
 #define CORDIC_PREC_1        0x0
 #define CORDIC_PREC_FULL     0xF
-
 /**
- * @brief Set CORDIC iteration precision.
- * @param prec Number of iterations minus one (0x0 = 1 iter, 0xF = 16 iter).
- */
+  * @brief Set CORDIC iteration precision.
+  * @param prec Number of iterations minus one (0x0 = 1 iter, 0xF = 16 iter).
+  */
 static inline void cordic_set_precision(uint32_t prec) {
     *reg32(CORDIC_BASE_ADDR, PRECISION_SFR_OFFSET) = prec;
 }
-
 /**
- * @brief Enable or disable dynamic read clock gating (DRCG) for the CORDIC module.
- * @param enable 1 to enable DRCG, 0 to disable.
- */
+  * @brief Enable or disable dynamic read clock gating (DRCG) for the CORDIC module.
+  * @param enable 1 to enable DRCG, 0 to disable.
+  */
 static inline void cordic_set_drcg(uint32_t enable) {
     *reg32(CORDIC_BASE_ADDR, DRCG_SFR_OFFSET) = enable;
 }
-
 /**
- * @brief Compare two arrays with relative + absolute tolerance.
- *        rel_pct=0: abs_tol only.  rel_pct=1: ~0.78%.  rel_pct=3: ~3.125%.
- * @return 1 if all elements match within tolerance, 0 otherwise.
- */
+  * @brief Compare two arrays with relative + absolute tolerance.
+  *        rel_pct=0: abs_tol only.  rel_pct=1: ~0.78%.  rel_pct=3: ~3.125%.
+  * @return 1 if all elements match within tolerance, 0 otherwise.
+  */
 static inline int cmp_rel(const int32_t x[], const int32_t y[], unsigned N, int32_t rel_pct, int32_t abs_tol) {
     unsigned shift = rel_pct == 0 ? 31 : rel_pct == 1 ? 7 : 5;
     for (unsigned i = 0; i < N; i++) {
@@ -83,15 +80,15 @@ static inline int cmp_rel(const int32_t x[], const int32_t y[], unsigned N, int3
     return 1;
 }
 /**
- * @brief Rotates an arbitrary vector (x, y) by an angle using HW CORDIC (opmode=1)
- *        Output includes CORDIC K_gain (~1.647). SW must post-multiply by CORDIC_K (39797)
- *        to compensate: result = (output * CORDIC_K) >> 16.
- * @param x X component (Q15.16)
- * @param y Y component (Q15.16)
- * @param angle Angle in normalized format (2π = 2^32)
- * @param x_out Pointer to rotated X output (K_gain-scaled, Q15.16)
- * @param y_out Pointer to rotated Y output (K_gain-scaled, Q15.16)
- */
+  * @brief Rotates an arbitrary vector (x, y) by an angle using HW CORDIC (opmode=1)
+  *        Output includes CORDIC K_gain (~1.647). SW must post-multiply by CORDIC_K (39797)
+  *        to compensate: result = (output * CORDIC_K) >> 16.
+  * @param x X component (Q15.16)
+  * @param y Y component (Q15.16)
+  * @param angle Angle in normalized format (2π = 2^32)
+  * @param x_out Pointer to rotated X output (K_gain-scaled, Q15.16)
+  * @param y_out Pointer to rotated Y output (K_gain-scaled, Q15.16)
+  */
 static inline void hw_rotate(int32_t x, int32_t y, uint32_t angle, int32_t *x_out, int32_t *y_out) {
     *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET) = 1;
     *reg32(CORDIC_BASE_ADDR, INPUT_X_OFFSET)    = x;
@@ -102,17 +99,16 @@ static inline void hw_rotate(int32_t x, int32_t y, uint32_t angle, int32_t *x_ou
     *x_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
     *y_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
 }
-
 /**
- * @brief SW CORDIC rotation: rotates (x, y) by angle using the same
- *        quadrant-based pre-rotation as the RTL. Output includes K-gain;
- *        caller applies kc() to compensate.
- * @param x      X component (Q15.16).
- * @param y      Y component (Q15.16).
- * @param angle  Angle in normalized format (2π = 2^32).
- * @param x_out  Pointer to rotated X output (Q15.16).
- * @param y_out  Pointer to rotated Y output (Q15.16).
- */
+  * @brief SW CORDIC rotation: rotates (x, y) by angle using the same
+  *        quadrant-based pre-rotation as the RTL. Output includes K-gain;
+  *        caller applies kc() to compensate.
+  * @param x      X component (Q15.16).
+  * @param y      Y component (Q15.16).
+  * @param angle  Angle in normalized format (2π = 2^32).
+  * @param x_out  Pointer to rotated X output (Q15.16).
+  * @param y_out  Pointer to rotated Y output (Q15.16).
+  */
 static inline void sw_rotate(int32_t x, int32_t y, uint32_t angle, int32_t *x_out, int32_t *y_out) {
     // Quadrant-based pre-rotation (matches RTL cordic_engine):
     // Top 2 bits pre-rotate (x,y) by quadrant×90°, residual z in [0, π/2).
@@ -154,13 +150,12 @@ static inline void sw_rotate(int32_t x, int32_t y, uint32_t angle, int32_t *x_ou
     *x_out = xi;
     *y_out = yi;
 }
-
 /**
- * @brief Polls the hardware CORDIC for sine and cosine values
- * @param angle Angle in normalized format (2π = 2^32).
- * @param sin_out Pointer to store the computed sine value (Q15.16 format).
- * @param cos_out Pointer to store the computed cosine value (Q15.16 format).
- */
+  * @brief Polls the hardware CORDIC for sine and cosine values
+  * @param angle Angle in normalized format (2π = 2^32).
+  * @param sin_out Pointer to store the computed sine value (Q15.16 format).
+  * @param cos_out Pointer to store the computed cosine value (Q15.16 format).
+  */
 static inline void hw_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out) {
     *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET) = 0;
     *reg32(CORDIC_BASE_ADDR, INPUT_OFFSET)      = angle;
@@ -169,14 +164,13 @@ static inline void hw_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out)
     *cos_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
     *sin_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
 }
-
 /**
- * @brief SW CORDIC: compute sine and cosine of an angle (Rotation Mode).
- *        Quadrant-based pre-rotation matches RTL cordic_engine.
- * @param angle  Angle in normalized format (2π = 2^32).
- * @param sin_out Pointer to store the sine (Q15.16).
- * @param cos_out Pointer to store the cosine (Q15.16).
- */
+  * @brief SW CORDIC: compute sine and cosine of an angle (Rotation Mode).
+  *        Quadrant-based pre-rotation matches RTL cordic_engine.
+  * @param angle  Angle in normalized format (2π = 2^32).
+  * @param sin_out Pointer to store the sine (Q15.16).
+  * @param cos_out Pointer to store the cosine (Q15.16).
+  */
 static inline void cordic_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out) {
     uint32_t quadrant = angle >> 30;
     int32_t z         = (int32_t)(angle & 0x3FFFFFFF);
@@ -217,15 +211,14 @@ static inline void cordic_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_
     *cos_out = x;
     *sin_out = y;
 }
-
 /**
- * @brief SW CORDIC: compute magnitude and phase of a vector (Vectoring Mode).
- *        Magnitude is K-gain compensated. Phase in normalized format (2π = 2^32).
- * @param x         X-coordinate (Q15.16).
- * @param y         Y-coordinate (Q15.16).
- * @param mag_out   Pointer to store magnitude (Q15.16).
- * @param phase_out Pointer to store phase (normalized).
- */
+  * @brief SW CORDIC: compute magnitude and phase of a vector (Vectoring Mode).
+  *        Magnitude is K-gain compensated. Phase in normalized format (2π = 2^32).
+  * @param x         X-coordinate (Q15.16).
+  * @param y         Y-coordinate (Q15.16).
+  * @param mag_out   Pointer to store magnitude (Q15.16).
+  * @param phase_out Pointer to store phase (normalized).
+  */
 static inline void cordic_magphase(int32_t x, int32_t y, int32_t *mag_out, int32_t *phase_out) {
     int32_t z = 0;
 

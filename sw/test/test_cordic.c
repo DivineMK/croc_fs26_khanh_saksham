@@ -34,10 +34,10 @@ int main(void) {
     uart_init();
     unsigned pass = 0;
 
-    /* DRCG workaround: precision_q resets to 0 on gated clock domain. */
+    // DRCG workaround: precision_q resets to 0 on gated clock domain.
     cordic_set_precision(15);
 
-    /* ---- Sincos mode: compare SW and HW CORDIC for each angle ---- */
+    // ---- Sincos mode: compare SW and HW CORDIC for each angle ----
     for (unsigned i = 0; i < NUM_ANGLES; i++) {
         uint32_t angle = angles[i];
         int32_t sw_sin, sw_cos, hw_sin, hw_cos;
@@ -63,7 +63,7 @@ int main(void) {
     }
     printf("%d/%d SINCOS_PASS\n", pass, NUM_ANGLES);
 
-    /* ---- Vector mode: rotate (Q16_ONE, 0) by each angle using HW CORDIC ---- */
+    // ---- Vector mode: rotate (Q16_ONE, 0) by each angle using HW CORDIC ----
     int32_t input_x = 65536, input_y = 0;
     pass = 0;
     for (unsigned i = 0; i < NUM_ANGLES; i++) {
@@ -73,12 +73,12 @@ int main(void) {
         int32_t hw_out_x, hw_out_y;
         uint32_t start, end, hw_cycles;
 
-        /* Compute expected result using SW sincos + rotation matrix */
+        // Compute expected result using SW sincos + rotation matrix
         cordic_sincos(angle, &sw_sin, &sw_cos);
         expected_x = (int32_t)(((int64_t)input_x * sw_cos - (int64_t)input_y * sw_sin) >> 16);
         expected_y = (int32_t)(((int64_t)input_x * sw_sin + (int64_t)input_y * sw_cos) >> 16);
 
-        /* HW rotate output is K-gain scaled; compensate with kc() */
+        // HW rotate output is K-gain scaled; compensate with kc()
         start = get_mcycle();
         hw_rotate(input_x, input_y, angle, &hw_out_x, &hw_out_y);
         end = get_mcycle();
@@ -96,7 +96,7 @@ int main(void) {
     }
     printf("%d/%d VEC_PASS\n", pass, NUM_ANGLES);
 
-    /* ---- SW rotate mode: rotate (Q16_ONE, 0) by each angle in pure SW ---- */
+    // ---- SW rotate mode: rotate (Q16_ONE, 0) by each angle in pure SW ----
     pass = 0;
     for (unsigned i = 0; i < NUM_ANGLES; i++) {
         uint32_t angle = angles[i];
@@ -105,12 +105,12 @@ int main(void) {
         int32_t sw_out_x, sw_out_y;
         uint32_t start, end, sw_cycles;
 
-        /* Compute expected result using SW sincos + rotation matrix */
+        // Compute expected result using SW sincos + rotation matrix
         cordic_sincos(angle, &sw_sin, &sw_cos);
         expected_x = (int32_t)(((int64_t)input_x * sw_cos - (int64_t)input_y * sw_sin) >> 16);
         expected_y = (int32_t)(((int64_t)input_x * sw_sin + (int64_t)input_y * sw_cos) >> 16);
 
-        /* SW rotate output is K-gain scaled; compensate with kc() */
+        // SW rotate output is K-gain scaled; compensate with kc()
         start = get_mcycle();
         sw_rotate(input_x, input_y, angle, &sw_out_x, &sw_out_y);
         end = get_mcycle();
