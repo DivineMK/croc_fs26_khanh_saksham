@@ -35,12 +35,12 @@ static const uint32_t atan_table[CORDIC_ITERATIONS] = {
 #define OUTPUT_ANGLE_OFFSET  0x08
 #define STATUS_OFFSET        0x0C
 #define INPUT_ANGLE_OFFSET   0x10
-#define PRECISION_SFR_OFFSET 0x14
-#define MISC_SFR_OFFSET      0x18
-#define OPTYPE_SFR_OFFSET    0x1C
-#define OPMODE_SFR_OFFSET    0x20
-#define INPUT_X_OFFSET       0x24
-#define INPUT_Y_OFFSET       0x28
+#define INPUT_X_OFFSET       0x14
+#define INPUT_Y_OFFSET       0x18
+#define PRECISION_SFR_OFFSET 0x1C
+#define MISC_SFR_OFFSET      0x20
+#define OPTYPE_SFR_OFFSET    0x24
+#define OPMODE_SFR_OFFSET    0x28
 #define DRCG_SFR_OFFSET      0x2C
 
 #define IRQ_CORDIC           20
