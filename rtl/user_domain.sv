@@ -24,7 +24,9 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   output logic [NumExternalIrqs-1:0] interrupts_o    // interrupts to core
 );
 
-  assign interrupts_o = '0;
+  logic cordic_irq;
+  assign interrupts_o[NumExternalIrqs-1:1] = '0;
+  assign interrupts_o[0] = cordic_irq;
 
 
   //////////////////////
@@ -121,8 +123,9 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   ) i_user_cordic (
     .clk_i,
     .rst_ni,
-    .obi_req_i  ( user_cordic_obi_req ),
-    .obi_rsp_o  ( user_cordic_obi_rsp )
+    .obi_req_i    ( user_cordic_obi_req ),
+    .obi_rsp_o    ( user_cordic_obi_rsp ),
+    .irq_o        ( cordic_irq          )
   );
 
   ///////////////////////////////////

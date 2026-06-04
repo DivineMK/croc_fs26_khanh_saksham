@@ -7,7 +7,8 @@ module cordic #(
     input clk_i,
     input rst_ni,
     input obi_req_t obi_req_i,
-    output obi_rsp_t obi_rsp_o
+    output obi_rsp_t obi_rsp_o,
+    output logic irq_o
 );
   import config_sfr_pkg::config_cordic_t;
   import config_sfr_pkg::PrecisionWidth;
@@ -38,7 +39,8 @@ module cordic #(
       .cordic_oup_y_i (cordic_y),
       .cordic_done_i  (cordic_compute_done),
       .config_cordic_o(config_cordic),
-      .cordic_start_o (cordic_start)
+      .cordic_start_o (cordic_start),
+      .irq_o
   );
 
   cordic_engine #(

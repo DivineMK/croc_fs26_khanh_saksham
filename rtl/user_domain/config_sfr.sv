@@ -23,7 +23,8 @@ module config_sfr #(
     input  logic signed    [SfrDataWidth-1:0] cordic_oup_y_i,
     input  logic                              cordic_done_i,
     output config_cordic_t                    config_cordic_o,
-    output logic                              cordic_start_o
+    output logic                              cordic_start_o,
+    output logic                              irq_o
 );
 
   // Read-write registers
@@ -32,9 +33,10 @@ module config_sfr #(
   logic [OpTypeFieldBitWidth-1:0] optype_d, optype_q;
   logic [OpModeFieldBitWidth-1:0] opmode_d, opmode_q;
   logic [CordicInputBitWidth-1:0] cordic_inp_d, cordic_inp_q;
-  logic [SfrDataWidth-1:0] cordic_oup_x_q, cordic_oup_x_d;
-  logic [SfrDataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
+  logic signed [SfrDataWidth-1:0] cordic_oup_x_q, cordic_oup_x_d;
+  logic signed [SfrDataWidth-1:0] cordic_oup_y_q, cordic_oup_y_d;
   logic status_q, status_d;
+  logic irq_d, irq_q;
 
   `FF(precision_q, precision_d, 4'd15, clk_i, rst_ni)
   `FF(misc_q, misc_d, '0, clk_i, rst_ni)
@@ -53,10 +55,10 @@ module config_sfr #(
   `FF(req_q, obi_req_i.req, '0, clk_i, rst_ni)
   `FF(we_q, obi_req_i.a.we, '0, clk_i, rst_ni)
   `FF(id_q, obi_req_i.a.aid, '0, clk_i, rst_ni)
-  // TODO: whether full addr need to be checked or just LSBs
   `FF(addr_q, obi_req_i.a.addr[IntAddrWidth-1:2], '0, clk_i, rst_ni)
   // replace start logic from control unit -> remove PRESTART
   `FF(status_q, status_d, '0, clk_i, rst_ni)
+  `FF(irq_q, irq_d, '0, clk_i, rst_ni)
 
   // Byte-enable mask: expands each BE bit to a full byte for masked writes
   logic [SfrDataWidth-1:0] be_mask;
@@ -64,6 +66,7 @@ module config_sfr #(
     assign be_mask[8*i+:8] = {8{obi_req_i.a.be[i]}};
   end
 
+  // TODO: whether full addr need to be checked or just LSBs
   // Access-valid flags (combinational from request-phase address)
   // assign sfraccess_valid_o    = (obi_req_i.a.addr[IntAddrWidth-1:2] == PRECISION_SFR_OFFSET)
   //                            || (obi_req_i.a.addr[IntAddrWidth-1:2] == MISC_SFR_OFFSET)
@@ -77,7 +80,22 @@ module config_sfr #(
   assign config_cordic_o.cordic_inp = cordic_inp_d;  // save 1 cycle over using _q
   assign config_cordic_o.drcg_en = misc_q[0];
   assign cordic_start_o = (status_q == 1);
+  assign irq_o = irq_q;
 
+  always_comb begin : irq
+    irq_d = irq_q;
+    if (cordic_done_i) begin
+      irq_d = 1'b1;
+    end
+
+    if (obi_req_i.req && !obi_req_i.a.we)
+      unique case ({
+        obi_req_i.a.addr[IntAddrWidth-1:2], 2'b00
+      })
+        OUTPUT_X_OFFSET, OUTPUT_Y_OFFSET, STATUS_OFFSET: irq_d = 1'b0;
+        default: ;
+      endcase
+  end
   // Address phase: update writable registers
   always_comb begin : write_fsm
     precision_d    = precision_q;
