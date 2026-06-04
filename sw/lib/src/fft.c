@@ -3,14 +3,8 @@
 
 #define Q16_ONE 65536
 
-// (a * b) >> 16 in Q16 using only 32-bit ops (no __muldi3)
 int32_t mul_fixed(int32_t a, int32_t b) {
-    int32_t a_h = a >> 16;
-    uint32_t a_l = (uint16_t)a;
-    int32_t b_h = b >> 16;
-    uint32_t b_l = (uint16_t)b;
-    return a_h * b_h * Q16_ONE + a_h * (int32_t)b_l
-         + (int32_t)a_l * b_h + (int32_t)((a_l * b_l) >> 16);
+    return (int32_t)(((int64_t)a * b) >> 16);
 }
 
 void fft(int32_t data_re[], int32_t data_im[], unsigned int N) {
@@ -87,9 +81,8 @@ void compute_with(int32_t data_re[], int32_t data_im[], unsigned int N, sincos_f
     }
 }
 
-// K-gain compensation: (x * 39797) >> 16 using only 32-bit ops (no __muldi3)
 int32_t kc(int32_t x) {
-    return (x >> 16) * CORDIC_K + (int32_t)(((uint32_t)(uint16_t)x * (uint32_t)CORDIC_K) >> 16);
+    return (int32_t)(((int64_t)x * CORDIC_K) >> 16);
 }
 
 void fft_rotate(int32_t data_re[], int32_t data_im[], unsigned int N, rotate_fn rotate) {
