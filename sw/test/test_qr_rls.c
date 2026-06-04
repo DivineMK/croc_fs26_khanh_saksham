@@ -36,10 +36,11 @@ static void gen_test_signal(void) {
 }
 
 int main(void) {
-    uart_init();
+    //uart_init();
     uint32_t start, end;
     uint32_t baseline_cycles;
 
+    cordic_set_drcg(1);
     cordic_set_precision(CORDIC_PREC_FULL);
 
     // Generate input signal
@@ -47,7 +48,7 @@ int main(void) {
 
     // ---- Baseline: SW vectoring + SW rotation ----
     qr_rls_init(R, p, N, DELTA);
-    start = get_mcycle();
+    //start = get_mcycle();
     for (unsigned n = 0; n < M; n++) {
         // Form input vector: [x(n), x(n-1), ..., x(n-N+1)]
         for (unsigned i = 0; i < N; i++) {
@@ -56,53 +57,53 @@ int main(void) {
         int32_t d = x_history[n];  // desired = input (system identification of identity)
         qr_rls_update(R, p, x, d, N, LAMBDA, sw_vector, sw_rotate);
     }
-    end = get_mcycle();
-    baseline_cycles = end - start;
-    // save_reference();
-    printf("baseline (sw+sw):  %d cycles\n", baseline_cycles);
+    //end = get_mcycle();
+    //baseline_cycles = end - start;
+    //save_reference();
+    //printf("baseline (sw+sw):  %d cycles\n", baseline_cycles);
 
-     // ---- HW vector + HW rotation ----
-     qr_rls_init(R, p, N, DELTA);
-     start = get_mcycle();
-     for (unsigned n = 0; n < M; n++) {
-         for (unsigned i = 0; i < N; i++) {
-             x[i] = (n >= i) ? x_history[n - i] : 0;
-         }
-         int32_t d = x_history[n];
-         qr_rls_update(R, p, x, d, N, LAMBDA, hw_vector, hw_rotate);
-     }
-     end = get_mcycle();
-     int sw_match = check_match(R_ref, R, N * N) && check_match(p_ref, p, N);
-     printf("hw+hw:            %d cycles  %s\n", end - start, sw_match ? "PASS" : "FAIL");
+    // // ---- HW vector + HW rotation ----
+    // qr_rls_init(R, p, N, DELTA);
+    // start = get_mcycle();
+    // for (unsigned n = 0; n < M; n++) {
+    //     for (unsigned i = 0; i < N; i++) {
+    //         x[i] = (n >= i) ? x_history[n - i] : 0;
+    //     }
+    //     int32_t d = x_history[n];
+    //     qr_rls_update(R, p, x, d, N, LAMBDA, hw_vector, hw_rotate);
+    // }
+    // end = get_mcycle();
+    // int sw_match = check_match(R_ref, R, N * N) && check_match(p_ref, p, N);
+    // printf("hw+hw:            %d cycles  %s\n", end - start, sw_match ? "PASS" : "FAIL");
 
-     // ---- HW vector + SW rotation ----
-     qr_rls_init(R, p, N, DELTA);
-     start = get_mcycle();
-     for (unsigned n = 0; n < M; n++) {
-         for (unsigned i = 0; i < N; i++) {
-             x[i] = (n >= i) ? x_history[n - i] : 0;
-         }
-         int32_t d = x_history[n];
-         qr_rls_update(R, p, x, d, N, LAMBDA, hw_vector, sw_rotate);
-     }
-     end = get_mcycle();
-     int hwvec_match = check_match(R_ref, R, N * N) && check_match(p_ref, p, N);
-     printf("hw_vec+sw_rot:    %d cycles  %s\n", end - start, hwvec_match ? "PASS" : "FAIL");
+    // // ---- HW vector + SW rotation ----
+    // qr_rls_init(R, p, N, DELTA);
+    // start = get_mcycle();
+    // for (unsigned n = 0; n < M; n++) {
+    //     for (unsigned i = 0; i < N; i++) {
+    //         x[i] = (n >= i) ? x_history[n - i] : 0;
+    //     }
+    //     int32_t d = x_history[n];
+    //     qr_rls_update(R, p, x, d, N, LAMBDA, hw_vector, sw_rotate);
+    // }
+    // end = get_mcycle();
+    // int hwvec_match = check_match(R_ref, R, N * N) && check_match(p_ref, p, N);
+    // printf("hw_vec+sw_rot:    %d cycles  %s\n", end - start, hwvec_match ? "PASS" : "FAIL");
 
-     // ---- SW vector + HW rotation ----
-     qr_rls_init(R, p, N, DELTA);
-     start = get_mcycle();
-     for (unsigned n = 0; n < M; n++) {
-         for (unsigned i = 0; i < N; i++) {
-             x[i] = (n >= i) ? x_history[n - i] : 0;
-         }
-         int32_t d = x_history[n];
-         qr_rls_update(R, p, x, d, N, LAMBDA, sw_vector, hw_rotate);
-     }
-     end = get_mcycle();
-     int hwrot_match = check_match(R_ref, R, N * N) && check_match(p_ref, p, N);
-     printf("sw_vec+hw_rot:    %d cycles  %s\n", end - start, hwrot_match ? "PASS" : "FAIL");
+    // // ---- SW vector + HW rotation ----
+    // qr_rls_init(R, p, N, DELTA);
+    // start = get_mcycle();
+    // for (unsigned n = 0; n < M; n++) {
+    //     for (unsigned i = 0; i < N; i++) {
+    //         x[i] = (n >= i) ? x_history[n - i] : 0;
+    //     }
+    //     int32_t d = x_history[n];
+    //     qr_rls_update(R, p, x, d, N, LAMBDA, sw_vector, hw_rotate);
+    // }
+    // end = get_mcycle();
+    // int hwrot_match = check_match(R_ref, R, N * N) && check_match(p_ref, p, N);
+    // printf("sw_vec+hw_rot:    %d cycles  %s\n", end - start, hwrot_match ? "PASS" : "FAIL");
 
-    uart_write_flush();
+    //uart_write_flush();
     return 0;
 }

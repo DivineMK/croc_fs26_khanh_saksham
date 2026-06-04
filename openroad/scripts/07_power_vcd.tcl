@@ -16,10 +16,10 @@ set_power_activity -input_port rst_ni -activity 0
 # Load the VCD file and define the simulation scope
 read_vcd -scope tb_croc_soc/i_croc_soc ../vsim/${proj_name}.vcd
 # Generate the statistical power report for the typical corner
-set filename "${report_dir}/06_${proj_name}.power_vcd.rpt"
+set filename "reports/power/06_${proj_name}.power_vcd.rpt"
 set fileId [open $filename w]
 close $fileId
 report_puts "VCD based power estimation"
-report_power -corner tt >> "reports/06_${proj_name}.power_vcd.rpt"
-report_power -instances [get_cells -hierarchical {i_croc_soc/*}] -corner tt >> "reports/06_${proj_name}.power_vcd.rpt"
-report_activity_annotation -report_unannotated > "reports/06_${proj_name}.activity.rpt"
+report_power -corner tt >> "reports/power/06_${proj_name}.power_vcd.rpt"
+report_power -instances [get_cells -hierarchical {i_croc_soc/*}] -corner tt >> "reports/power/06_${proj_name}.power_vcd.rpt"
+report_activity_annotation -report_unannotated > "reports/power/06_${proj_name}.activity.rpt"

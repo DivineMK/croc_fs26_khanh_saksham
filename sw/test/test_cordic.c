@@ -21,10 +21,11 @@ static int check_match(const int32_t *ref, const int32_t *actual, int count) {
     return cmp_rel(ref, actual, count, 1, 200);
 }
 
-// #define CYCLE_MODE
+#define CYCLE_MODE
 
 int main(void) {
     uart_init();
+    cordic_set_drcg(1);
     cordic_set_precision(15);
 
     // =====================================================

@@ -91,14 +91,46 @@ static inline int cmp_rel(const int32_t x[], const int32_t y[], unsigned N, int3
   * @param y_out Pointer to rotated Y output (K_gain-scaled, Q15.16)
   */
 static inline void hw_rotate(int32_t x, int32_t y, uint32_t angle, int32_t *x_out, int32_t *y_out) {
-    *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET) = 1;
-    *reg32(CORDIC_BASE_ADDR, INPUT_X_OFFSET)    = x;
-    *reg32(CORDIC_BASE_ADDR, INPUT_Y_OFFSET)    = y;
-    *reg32(CORDIC_BASE_ADDR, INPUT_ANGLE_OFFSET)      = angle;
+    *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET)  = 1;
+    *reg32(CORDIC_BASE_ADDR, INPUT_X_OFFSET)     = x;
+    *reg32(CORDIC_BASE_ADDR, INPUT_Y_OFFSET)     = y;
+    *reg32(CORDIC_BASE_ADDR, INPUT_ANGLE_OFFSET) = angle;
     while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET) == 1) {
     }
     *x_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
     *y_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
+}
+/**
+  * @brief Polls the hardware CORDIC for sine and cosine values
+  * @param angle Angle in normalized format (2pi = 2^32).
+  * @param sin_out Pointer to store the computed sine value (Q15.16 format).
+  * @param cos_out Pointer to store the computed cosine value (Q15.16 format).
+  */
+static inline void hw_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out) {
+    *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET)  = 0;
+    *reg32(CORDIC_BASE_ADDR, INPUT_ANGLE_OFFSET) = angle;
+    while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET) == 1) {
+    }
+    *cos_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
+    *sin_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
+}
+/**
+  * @brief HW CORDIC vectoring mode: compute magnitude and phase of vector (x, y).
+  *        Input (x, y) is rotated to X-axis; X output = magnitude, Z output = angle.
+  *        Right half-plane only (x >= 0). Output includes K_gain; apply kc() to compensate.
+  * @param x         X component (Q15.16), must be >= 0.
+  * @param y         Y component (Q15.16).
+  * @param mag_out   Pointer to store magnitude (K_gain-scaled, Q15.16).
+  * @param phase_out Pointer to store phase angle (normalized format, 2pi = 2^32).
+  */
+static inline void hw_vector(int32_t x, int32_t y, int32_t *mag_out, int32_t *phase_out) {
+    *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET) = 2;
+    *reg32(CORDIC_BASE_ADDR, INPUT_X_OFFSET)    = x;
+    *reg32(CORDIC_BASE_ADDR, INPUT_Y_OFFSET)    = y; // Triggers start in vectoring mode
+    while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET) == 1) {
+    }
+    *mag_out   = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
+    *phase_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_ANGLE_OFFSET);
 }
 /**
   * @brief SW CORDIC rotation: rotates (x, y) by angle using the same
@@ -152,38 +184,6 @@ static inline void sw_rotate(int32_t x, int32_t y, uint32_t angle, int32_t *x_ou
     *y_out = yi;
 }
 /**
-  * @brief Polls the hardware CORDIC for sine and cosine values
-  * @param angle Angle in normalized format (2pi = 2^32).
-  * @param sin_out Pointer to store the computed sine value (Q15.16 format).
-  * @param cos_out Pointer to store the computed cosine value (Q15.16 format).
-  */
-static inline void hw_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out) {
-    *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET) = 0;
-    *reg32(CORDIC_BASE_ADDR, INPUT_ANGLE_OFFSET)      = angle;
-    while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET) == 1) {
-    }
-    *cos_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
-    *sin_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_Y_OFFSET);
-}
-/**
-  * @brief HW CORDIC vectoring mode: compute magnitude and phase of vector (x, y).
-  *        Input (x, y) is rotated to X-axis; X output = magnitude, Z output = angle.
-  *        Right half-plane only (x >= 0). Output includes K_gain; apply kc() to compensate.
-  * @param x         X component (Q15.16), must be >= 0.
-  * @param y         Y component (Q15.16).
-  * @param mag_out   Pointer to store magnitude (K_gain-scaled, Q15.16).
-  * @param phase_out Pointer to store phase angle (normalized format, 2pi = 2^32).
-  */
-static inline void hw_vector(int32_t x, int32_t y, int32_t *mag_out, int32_t *phase_out) {
-    *reg32(CORDIC_BASE_ADDR, OPMODE_SFR_OFFSET) = 2;
-    *reg32(CORDIC_BASE_ADDR, INPUT_X_OFFSET)    = x;
-    *reg32(CORDIC_BASE_ADDR, INPUT_Y_OFFSET)    = y;  // Triggers start in vectoring mode
-    while (*reg32(CORDIC_BASE_ADDR, STATUS_OFFSET) == 1) {
-    }
-    *mag_out   = *reg32(CORDIC_BASE_ADDR, OUTPUT_X_OFFSET);
-    *phase_out = *reg32(CORDIC_BASE_ADDR, OUTPUT_ANGLE_OFFSET);
-}
-/**
   * @brief SW CORDIC: compute sine and cosine of an angle (Rotation Mode).
   *        Quadrant-based pre-rotation matches RTL cordic_engine.
   * @param angle  Angle in normalized format (2pi = 2^32).
@@ -231,36 +231,6 @@ static inline void sw_sincos(uint32_t angle, int32_t *sin_out, int32_t *cos_out)
     *sin_out = y;
 }
 /**
-  * @brief SW CORDIC: compute magnitude and phase of a vector (Vectoring Mode).
-  *        Magnitude is K-gain compensated. Phase in normalized format (2pi = 2^32).
-  * @param x         X-coordinate (Q15.16).
-  * @param y         Y-coordinate (Q15.16).
-  * @param mag_out   Pointer to store magnitude (Q15.16).
-  * @param phase_out Pointer to store phase (normalized).
-  */
-static inline void sw_magphase(int32_t x, int32_t y, int32_t *mag_out, int32_t *phase_out) {
-    int32_t z = 0;
-
-    for (int i = 0; i < CORDIC_ITERATIONS; ++i) {
-        int32_t x_temp = x;
-        int32_t y_temp = y;
-
-        if (y < 0) {
-            x = x_temp - (y_temp >> i);
-            y = y_temp + (x_temp >> i);
-            z -= atan_table[i];
-        } else {
-            x = x_temp + (y_temp >> i);
-            y = y_temp - (x_temp >> i);
-            z += atan_table[i];
-        }
-    }
-
-    *mag_out   = (int32_t)(((int64_t)x * CORDIC_K) >> CORDIC_FRACTIONAL_BITS);
-    *phase_out = z;
-}
-
-/**
   * @brief SW CORDIC vectoring: compute magnitude and phase of (x, y).
   *        Output magnitude is K-scaled (caller must apply kc() to compensate).
   *        Matches hw_vector() interface for pluggable function pointers.
@@ -276,7 +246,7 @@ static inline void sw_vector(int32_t x, int32_t y, int32_t *mag_out, int32_t *ph
     if (x < 0) {
         x = -x;
         y = -y;
-        z = (int32_t)0x80000000;  // pi in normalized angle
+        z = (int32_t)0x80000000; // pi in normalized angle
     }
 
     for (int i = 0; i < CORDIC_ITERATIONS; ++i) {
@@ -294,7 +264,7 @@ static inline void sw_vector(int32_t x, int32_t y, int32_t *mag_out, int32_t *ph
         }
     }
 
-    *mag_out   = x;  // K-scaled, caller applies kc()
+    *mag_out   = x; // K-scaled, caller applies kc()
     *phase_out = z;
 }
 
